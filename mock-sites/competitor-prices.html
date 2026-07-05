@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>최저가 비교 - PriceHunter</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Noto Sans KR', sans-serif; background: #f5f5f5; padding: 20px; }
+        .header { background: #2196F3; color: white; padding: 20px; border-radius: 12px; margin-bottom: 20px; }
+        .header h1 { font-size: 1.5em; }
+        .header p { opacity: 0.8; margin-top: 4px; }
+        .product-card { background: white; border-radius: 12px; padding: 20px; margin-bottom: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+        .product-card h3 { color: #1a1a1a; margin-bottom: 12px; }
+        .price-table { width: 100%; border-collapse: collapse; }
+        .price-table th { background: #e3f2fd; padding: 10px; text-align: left; font-size: 0.85em; }
+        .price-table td { padding: 10px; border-bottom: 1px solid #eee; font-size: 0.9em; }
+        .price-lowest { color: #d32f2f; font-weight: 700; }
+        .badge { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 0.7em; font-weight: 600; }
+        .badge-lowest { background: #ffebee; color: #d32f2f; }
+        .badge-promo { background: #e8f5e9; color: #2e7d32; }
+        .updated { text-align: right; color: #999; font-size: 0.75em; margin-top: 20px; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🔍 PriceHunter — 실시간 최저가 비교</h1>
+        <p>전자기기 · 생활용품 · 식품 최저가를 한눈에</p>
+    </div>
+
+    <div class="product-card">
+        <h3>고속 보조배터리 20000mAh</h3>
+        <table class="price-table">
+            <tr><th>판매처</th><th>가격</th><th>배송</th><th>비고</th></tr>
+            <tr><td>우리몰</td><td>69,000원</td><td>무료배송</td><td></td></tr>
+            <tr><td>쿠O</td><td class="price-lowest">59,900원 <span class="badge badge-lowest">최저가</span></td><td>로켓배송</td><td></td></tr>
+            <tr><td>네O버</td><td>64,500원</td><td>무료배송</td><td><span class="badge badge-promo">5% 쿠폰</span></td></tr>
+            <tr><td>11O</td><td>62,000원</td><td>2,500원</td><td></td></tr>
+        </table>
+    </div>
+
+    <div class="product-card">
+        <h3>무선 이어폰 (화이트)</h3>
+        <table class="price-table">
+            <tr><th>판매처</th><th>가격</th><th>배송</th><th>비고</th></tr>
+            <tr><td>우리몰</td><td>35,000원</td><td>무료배송</td><td></td></tr>
+            <tr><td>쿠O</td><td>33,900원</td><td>로켓배송</td><td></td></tr>
+            <tr><td>네O버</td><td class="price-lowest">31,500원 <span class="badge badge-lowest">최저가</span></td><td>무료배송</td><td><span class="badge badge-promo">카드할인</span></td></tr>
+            <tr><td>G마O</td><td>34,200원</td><td>3,000원</td><td></td></tr>
+        </table>
+    </div>
+
+    <div class="product-card">
+        <h3>시카 수분크림 50ml</h3>
+        <table class="price-table">
+            <tr><th>판매처</th><th>가격</th><th>배송</th><th>비고</th></tr>
+            <tr><td>우리몰</td><td>28,000원</td><td>무료배송</td><td></td></tr>
+            <tr><td>올O브영</td><td class="price-lowest">24,900원 <span class="badge badge-lowest">최저가</span></td><td>매장픽업</td><td><span class="badge badge-promo">1+1 행사</span></td></tr>
+            <tr><td>쿠O</td><td>26,500원</td><td>로켓배송</td><td></td></tr>
+            <tr><td>위O프</td><td>27,000원</td><td>무료배송</td><td></td></tr>
+        </table>
+    </div>
+
+    <p class="updated">마지막 업데이트: 2026-07-01 09:30 KST</p>
+</body>
+</html>

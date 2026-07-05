@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>주간 날씨 예보 - WeatherNow</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Noto Sans KR', sans-serif; background: #e3f2fd; padding: 20px; }
+        .header { background: linear-gradient(135deg, #1565c0, #42a5f5); color: white; padding: 24px; border-radius: 12px; margin-bottom: 24px; }
+        .header h1 { font-size: 1.4em; }
+        .today { background: white; border-radius: 12px; padding: 24px; margin-bottom: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); text-align: center; }
+        .today .temp { font-size: 3em; font-weight: 700; color: #d32f2f; }
+        .today .condition { font-size: 1.2em; color: #555; margin-top: 4px; }
+        .alert { background: #ffebee; border: 1px solid #ef9a9a; border-radius: 8px; padding: 12px 16px; margin-bottom: 20px; color: #c62828; font-weight: 600; }
+        .forecast { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 12px; margin-bottom: 20px; }
+        .day-card { background: white; border-radius: 12px; padding: 16px; text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.06); }
+        .day-card .date { font-size: 0.8em; color: #666; }
+        .day-card .icon { font-size: 2em; margin: 8px 0; }
+        .day-card .temps { font-size: 0.85em; }
+        .day-card .high { color: #d32f2f; font-weight: 600; }
+        .day-card .low { color: #1565c0; }
+        .summary { background: white; border-radius: 12px; padding: 20px; box-shadow: 0 2px 6px rgba(0,0,0,0.06); }
+        .summary h3 { color: #1565c0; margin-bottom: 12px; }
+        .summary li { margin-bottom: 8px; line-height: 1.6; color: #444; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🌤️ WeatherNow — 서울 주간 날씨 예보</h1>
+    </div>
+
+    <div class="today">
+        <div class="temp">33°C</div>
+        <div class="condition">☀️ 맑음 | 습도 65% | 자외선 매우높음</div>
+    </div>
+
+    <div class="alert">⚠️ 폭염주의보 발령 (7/2~7/3) — 낮 최고 36°C 예상</div>
+
+    <div class="forecast">
+        <div class="day-card">
+            <div class="date">7/2 (수)</div>
+            <div class="icon">🔥</div>
+            <div class="temps"><span class="high">35°</span> / <span class="low">26°</span></div>
+            <div style="font-size:0.7em;color:#d32f2f;margin-top:4px;">폭염주의보</div>
+        </div>
+        <div class="day-card">
+            <div class="date">7/3 (목)</div>
+            <div class="icon">🔥</div>
+            <div class="temps"><span class="high">36°</span> / <span class="low">27°</span></div>
+            <div style="font-size:0.7em;color:#d32f2f;margin-top:4px;">폭염경보</div>
+        </div>
+        <div class="day-card">
+            <div class="date">7/4 (금)</div>
+            <div class="icon">☀️</div>
+            <div class="temps"><span class="high">34°</span> / <span class="low">25°</span></div>
+        </div>
+        <div class="day-card">
+            <div class="date">7/5 (토)</div>
+            <div class="icon">⛅</div>
+            <div class="temps"><span class="high">30°</span> / <span class="low">23°</span></div>
+        </div>
+        <div class="day-card">
+            <div class="date">7/6 (일)</div>
+            <div class="icon">🌧️</div>
+            <div class="temps"><span class="high">28°</span> / <span class="low">22°</span></div>
+            <div style="font-size:0.7em;color:#1565c0;margin-top:4px;">강수 80%</div>
+        </div>
+        <div class="day-card">
+            <div class="date">7/7 (월)</div>
+            <div class="icon">☀️</div>
+            <div class="temps"><span class="high">31°</span> / <span class="low">24°</span></div>
+        </div>
+        <div class="day-card">
+            <div class="date">7/8 (화)</div>
+            <div class="icon">☀️</div>
+            <div class="temps"><span class="high">33°</span> / <span class="low">25°</span></div>
+        </div>
+    </div>
+
+    <div class="summary">
+        <h3>📋 주간 요약 (수요 영향 분석)</h3>
+        <ul>
+            <li>7/2~3: <strong>폭염</strong> — 냉음료, 아이스크림, 생수 수요 급증 예상 (200~300%)</li>
+            <li>7/4~5: 더위 지속 — 냉방용품, 선크림 수요 유지</li>
+            <li>7/6: <strong>소나기</strong> — 일회용 우산, 우비 수요 급증 (500%). 야외 활동 감소로 배달 음식 수요↑</li>
+            <li>7/7~8: 맑음 복귀 — 정상 수요 패턴 + 월드컵 영향(맥주/안주)</li>
+        </ul>
+    </div>
+</body>
+</html>
