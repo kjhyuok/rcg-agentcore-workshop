@@ -9,14 +9,10 @@ import json
 import uuid
 from strands import Agent
 from strands.models import BedrockModel
-from bedrock_agentcore.runtime import BedrockAgentCoreApp
+from strands.tools.mcp import MCPClient
 from strands_tools.code_interpreter import AgentCoreCodeInterpreter
-from mcp import ClientSession
 from mcp.client.streamable_http import streamablehttp_client
-import asyncio
-import nest_asyncio
-
-nest_asyncio.apply()
+from bedrock_agentcore.runtime import BedrockAgentCoreApp
 
 # ============================================================
 # 환경변수 (agentcore deploy --env 로 주입)
@@ -65,16 +61,6 @@ model = BedrockModel(
     region_name=REGION,
 )
 
-
-async def get_gateway_tools(gateway_url: str, headers: dict) -> list:
-    """Gateway에서 MCP Tool 목록을 가져옵니다."""
-    async with streamablehttp_client(gateway_url, headers=headers) as (read, write, _):
-        async with ClientSession(read, write) as session:
-            await session.initialize()
-            tools_result = await session.list_tools()
-            return tools_result.tools
-
-
 # ============================================================
 # Runtime Entrypoint
 # ============================================================
@@ -87,23 +73,19 @@ def recommend_agent(payload: dict) -> dict:
     user_message = payload.get("message", "")
     session_id = payload.get("session_id", f"sess-{uuid.uuid4()}")
 
-    # Gateway에서 비즈니스 Tool 가져오기
-    # Runtime 내부에서는 IAM 역할 기반 인증 (Authorization 헤더 불필요)
-    # 외부에서는 OAuth Bearer 토큰 사용
-    access_token = os.environ.get("GATEWAY_ACCESS_TOKEN", "")
-    headers = {"Authorization": f"Bearer {access_token}"} if access_token else {}
-
-    gateway_tools = asyncio.run(get_gateway_tools(GATEWAY_URL, headers))
-
-    # Gateway Tool + Code Interpreter를 모두 Agent에 부여
-    all_tools = list(gateway_tools) + [code_interpreter_tool.code_interpreter]
-
-    agent = Agent(
-        model=model,
-        system_prompt=SYSTEM_PROMPT,
-        tools=all_tools,
+    # Gateway MCP Client로 Tool 연결 (Strands 네이티브 래핑)
+    mcp_client = MCPClient(
+        lambda: streamablehttp_client(GATEWAY_URL)
     )
-    result = agent(user_message)
+
+    with mcp_client:
+        # Gateway Tools + Code Interpreter를 Agent에 부여
+        agent = Agent(
+            model=model,
+            system_prompt=SYSTEM_PROMPT,
+            tools=[mcp_client, code_interpreter_tool.code_interpreter],
+        )
+        result = agent(user_message)
 
     return {
         "response": str(result),
@@ -115,12 +97,20 @@ def recommend_agent(payload: dict) -> dict:
 # 로컬 테스트 (python3 agents/phase1_recommend.py)
 # ============================================================
 if __name__ == "__main__":
-    print("상품 추천 Agent (AgentCore Native + Code Interpreter)")
+    print("🛒 상품 추천 Agent (AgentCore Native + Code Interpreter)")
     print("=" * 50)
 
+    if not GATEWAY_URL:
+        print("❌ AGENTCORE_GATEWAY_URL 환경변수가 설정되지 않았습니다.")
+        print("   먼저 실행: python3 scripts/setup-gateway.py")
+        exit(1)
+
     test_input = {
-        "message": "고객 C001에게 적합한 상품 3개 추천해주세요. 알러지 고려해서 비교 차트도 만들어주세요.",
+        "message": "고객 C001에게 적합한 상품 3개 추천해주세요. 알러지 고려해서요.",
         "session_id": "test-001",
     }
     result = recommend_agent(test_input)
     print(f"\nAgent: {result['response']}")
+else:
+    # Runtime 배포 시 app.run()으로 서버 시작
+    app.run()

@@ -21,6 +21,15 @@ pip install -r requirements.txt -q
 # Playwright (Browser Tool)
 playwright install chromium 2>/dev/null || echo "⚠️  Playwright chromium 설치 실패 (Phase 2에서 필요, 지금은 무시 가능)"
 
+# AgentCore CLI (npm 패키지)
+echo ""
+echo "🔧 AgentCore CLI 설치..."
+if command -v npm &> /dev/null; then
+    npm install -g @aws/agentcore-cli 2>/dev/null && echo "✅ agentcore CLI 설치 완료" || echo "⚠️  agentcore CLI 설치 실패 (npm 권한 이슈 시 sudo 필요)"
+else
+    echo "⚠️  npm 미설치 — agentcore CLI는 수동 설치 필요: npm install -g @aws/agentcore-cli"
+fi
+
 echo ""
 echo "✅ Python 환경 설정 완료!"
 echo ""

@@ -70,8 +70,8 @@ aws iam put-role-policy \
     }]
   }" 2>/dev/null || true
 
-echo "  ⏳ IAM 전파 대기 (10초)..."
-sleep 10
+echo "  ⏳ IAM 전파 대기 (30초)..."
+sleep 30
 
 # ============================================================
 # 2. Lambda 11개 배포
