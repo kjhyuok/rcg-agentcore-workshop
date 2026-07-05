@@ -55,7 +55,7 @@ SYNTHESIS_PROMPT = """당신은 최종 응답을 다듬는 편집자입니다.
 bedrock_client = boto3.client("bedrock-agent-runtime", region_name=REGION)
 
 model = BedrockModel(
-    model_id="us.anthropic.claude-sonnet-4-6-20250514-v1:0",
+    model_id="anthropic.claude-sonnet-4-6",
     region_name=REGION,
 )
 
