@@ -26,7 +26,7 @@ import boto3
 # 설정
 # ============================================================
 REGION = os.environ.get("AWS_REGION", "us-east-1")
-JUDGE_MODEL_ID = "anthropic.claude-sonnet-4-6"
+JUDGE_MODEL_ID = "us.anthropic.claude-sonnet-4-6"
 
 bedrock_runtime = boto3.client("bedrock-runtime", region_name=REGION)
 agentcore_client = boto3.client("bedrock-agent-runtime", region_name=REGION)

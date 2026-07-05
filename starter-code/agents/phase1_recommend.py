@@ -57,7 +57,7 @@ code_interpreter_tool = AgentCoreCodeInterpreter(region=REGION)
 # Agent 생성 (Gateway MCP + Code Interpreter)
 # ============================================================
 model = BedrockModel(
-    model_id="anthropic.claude-sonnet-4-6",
+    model_id="us.anthropic.claude-sonnet-4-6",
     region_name=REGION,
 )
 

@@ -106,7 +106,7 @@ async def get_gateway_tools(gateway_url: str, headers: dict) -> list:
 # Agent 생성
 # ============================================================
 model = BedrockModel(
-    model_id="anthropic.claude-sonnet-4-6",
+    model_id="us.anthropic.claude-sonnet-4-6",
     region_name=REGION,
 )
 

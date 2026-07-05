@@ -149,7 +149,7 @@ import boto3, json
 client = boto3.client('bedrock-runtime', region_name='${REGION}')
 try:
     resp = client.invoke_model(
-        modelId='anthropic.claude-sonnet-4-6',
+        modelId='us.anthropic.claude-sonnet-4-6',
         body=json.dumps({
             'anthropic_version': 'bedrock-2023-05-31',
             'max_tokens': 10,
