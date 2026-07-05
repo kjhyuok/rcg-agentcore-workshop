@@ -17,7 +17,7 @@ echo ""
 # ============================================================
 # 1. SageMaker Execution Role 찾기
 # ============================================================
-echo "[1/3] SageMaker Execution Role 탐색..."
+echo "[1/2] SageMaker Execution Role 탐색..."
 
 # SageMaker Domain의 Execution Role 찾기
 SM_ROLE_ARN=$(aws sagemaker list-domains --region ${REGION} \
@@ -49,7 +49,7 @@ echo "  ✅ Role 찾음: ${SM_ROLE_NAME}"
 # 2. Bedrock + AgentCore 정책 추가
 # ============================================================
 echo ""
-echo "[2/3] Bedrock + AgentCore 권한 추가..."
+echo "[2/2] Bedrock + AgentCore 권한 추가..."
 
 POLICY_NAME="RCGWorkshopBedrockAgentCoreAccess"
 
@@ -136,34 +136,6 @@ aws iam put-role-policy \
   --policy-document "${POLICY_DOC}" 2>/dev/null \
   && echo "  ✅ 인라인 정책 추가: ${POLICY_NAME}" \
   || echo "  ❌ 정책 추가 실패 — 수동으로 추가 필요"
-
-# ============================================================
-# 3. Bedrock 모델 활성화 확인
-# ============================================================
-echo ""
-echo "[3/3] Bedrock 모델 접근 확인..."
-
-# Claude Sonnet 4.6 호출 테스트
-python3 -c "
-import boto3, json
-client = boto3.client('bedrock-runtime', region_name='${REGION}')
-try:
-    resp = client.invoke_model(
-        modelId='us.anthropic.claude-sonnet-4-6',
-        body=json.dumps({
-            'anthropic_version': 'bedrock-2023-05-31',
-            'max_tokens': 10,
-            'messages': [{'role': 'user', 'content': 'hi'}]
-        })
-    )
-    print('  ✅ Claude Sonnet 4.6 접근 OK')
-except Exception as e:
-    if 'AccessDenied' in str(e) or 'not authorized' in str(e).lower():
-        print('  ❌ Bedrock Model Access 필요!')
-        print('     Console → Bedrock → Model access → Claude Sonnet 4.6 활성화')
-    else:
-        print(f'  ⚠️  테스트 실패: {e}')
-" 2>/dev/null || echo "  ⚠️  Python 테스트 실행 실패 (CloudShell Python 버전 이슈 — 무시 가능)"
 
 echo ""
 echo "╔══════════════════════════════════════════════════════════╗"
