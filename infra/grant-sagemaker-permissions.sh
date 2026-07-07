@@ -63,8 +63,20 @@ POLICY_DOC=$(cat <<EOF
             "Action": [
                 "bedrock:InvokeModel",
                 "bedrock:InvokeModelWithResponseStream",
+                "bedrock:Converse",
+                "bedrock:ConverseStream",
                 "bedrock:ListFoundationModels",
                 "bedrock:GetFoundationModel"
+            ],
+            "Resource": "*"
+        },
+        {
+            "Sid": "MarketplaceModelSubscription",
+            "Effect": "Allow",
+            "Action": [
+                "aws-marketplace:ViewSubscriptions",
+                "aws-marketplace:Subscribe",
+                "aws-marketplace:Unsubscribe"
             ],
             "Resource": "*"
         },
