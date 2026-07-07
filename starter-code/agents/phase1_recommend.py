@@ -78,14 +78,13 @@ def recommend_agent(payload: dict) -> dict:
         lambda: streamablehttp_client(GATEWAY_URL)
     )
 
-    with mcp_client:
-        # Gateway Tools + Code Interpreter를 Agent에 부여
-        agent = Agent(
-            model=model,
-            system_prompt=SYSTEM_PROMPT,
-            tools=[mcp_client, code_interpreter_tool.code_interpreter],
-        )
-        result = agent(user_message)
+    # Gateway Tools + Code Interpreter를 Agent에 부여
+    agent = Agent(
+        model=model,
+        system_prompt=SYSTEM_PROMPT,
+        tools=[mcp_client, code_interpreter_tool.code_interpreter],
+    )
+    result = agent(user_message)
 
     return {
         "response": str(result),
