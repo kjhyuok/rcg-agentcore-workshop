@@ -10,7 +10,6 @@ import uuid
 from strands import Agent
 from strands.models import BedrockModel
 from strands.tools.mcp import MCPClient
-from strands_tools.code_interpreter import AgentCoreCodeInterpreter
 from mcp.client.streamable_http import streamablehttp_client
 from bedrock_agentcore.runtime import BedrockAgentCoreApp
 
@@ -49,11 +48,6 @@ SYSTEM_PROMPT = """당신은 리테일 상품 추천 전문가입니다.
 """
 
 # ============================================================
-# Code Interpreter Tool 초기화
-# ============================================================
-code_interpreter_tool = AgentCoreCodeInterpreter(region=REGION)
-
-# ============================================================
 # Agent 생성 (Gateway MCP + Code Interpreter)
 # ============================================================
 model = BedrockModel(
@@ -77,6 +71,10 @@ def recommend_agent(payload: dict) -> dict:
     mcp_client = MCPClient(
         lambda: streamablehttp_client(GATEWAY_URL)
     )
+
+    # Code Interpreter (lazy import + init — Runtime 초기화 시간 절약)
+    from strands_tools.code_interpreter import AgentCoreCodeInterpreter
+    code_interpreter_tool = AgentCoreCodeInterpreter(region=REGION)
 
     # Gateway Tools + Code Interpreter를 Agent에 부여
     agent = Agent(

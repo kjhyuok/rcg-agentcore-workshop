@@ -46,10 +46,10 @@ SM_ROLE_NAME=$(echo "$SM_ROLE_ARN" | awk -F'/' '{print $NF}')
 echo "  ✅ Role 찾음: ${SM_ROLE_NAME}"
 
 # ============================================================
-# 2. Bedrock + AgentCore 정책 추가
+# 2. 전체 권한 정책 추가 (Bedrock + AgentCore + S3 + IAM + Logs)
 # ============================================================
 echo ""
-echo "[2/2] Bedrock + AgentCore 권한 추가..."
+echo "[2/2] Bedrock + AgentCore + Deploy 권한 추가..."
 
 POLICY_NAME="RCGWorkshopBedrockAgentCoreAccess"
 
@@ -106,34 +106,28 @@ POLICY_DOC=$(cat <<EOF
             "Resource": "arn:aws:lambda:${REGION}:${ACCOUNT_ID}:function:rcg-workshop-*"
         },
         {
-            "Sid": "IAMPassRole",
-            "Effect": "Allow",
-            "Action": "iam:PassRole",
-            "Resource": "arn:aws:iam::${ACCOUNT_ID}:role/rcg-workshop-*"
-        },
-        {
-            "Sid": "S3MockSiteAccess",
+            "Sid": "IAMForDeploy",
             "Effect": "Allow",
             "Action": [
-                "s3:GetObject",
-                "s3:ListBucket"
+                "iam:PassRole",
+                "iam:CreateServiceLinkedRole",
+                "iam:PutRolePolicy"
             ],
-            "Resource": [
-                "arn:aws:s3:::rcg-workshop-mock-${ACCOUNT_ID}",
-                "arn:aws:s3:::rcg-workshop-mock-${ACCOUNT_ID}/*"
-            ]
+            "Resource": "*"
+        },
+        {
+            "Sid": "S3FullAccess",
+            "Effect": "Allow",
+            "Action": "s3:*",
+            "Resource": "*"
         },
         {
             "Sid": "CloudWatchObservability",
             "Effect": "Allow",
             "Action": [
-                "cloudwatch:GetMetricData",
-                "cloudwatch:ListMetrics",
-                "logs:GetLogEvents",
-                "logs:FilterLogEvents",
-                "logs:DescribeLogGroups",
-                "xray:GetTraceSummaries",
-                "xray:BatchGetTraces"
+                "cloudwatch:*",
+                "logs:*",
+                "xray:*"
             ],
             "Resource": "*"
         }
@@ -149,10 +143,14 @@ aws iam put-role-policy \
   && echo "  ✅ 인라인 정책 추가: ${POLICY_NAME}" \
   || echo "  ❌ 정책 추가 실패 — 수동으로 추가 필요"
 
+# S3FullAccess managed policy도 추가 (인라인 정책과 별도로 안전하게)
+aws iam attach-role-policy \
+  --role-name "${SM_ROLE_NAME}" \
+  --policy-arn arn:aws:iam::aws:policy/AmazonS3FullAccess 2>/dev/null || true
+
 echo ""
 echo "╔══════════════════════════════════════════════════════════╗"
 echo "║  ✅ SageMaker 권한 설정 완료!                           ║"
 echo "║                                                        ║"
-echo "║  Code Editor에서 Bedrock + AgentCore 호출이             ║"
-echo "║  가능합니다.                                            ║"
+echo "║  Code Editor에서 Bedrock + AgentCore + Deploy 가능      ║"
 echo "╚══════════════════════════════════════════════════════════╝"

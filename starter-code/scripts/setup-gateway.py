@@ -159,3 +159,23 @@ print(f"\n   환경변수 설정:")
 print(f"   export AGENTCORE_GATEWAY_URL={gateway_url}")
 print(f"   export GATEWAY_ID={gateway_id}")
 print(f"{'='*50}")
+
+# .env.w001에 자동 추가
+env_file = os.path.expanduser("~/workshop/.env.w001")
+env_lines = {
+    "AGENTCORE_GATEWAY_URL": gateway_url,
+    "GATEWAY_ID": gateway_id,
+}
+try:
+    existing = ""
+    if os.path.exists(env_file):
+        with open(env_file, "r") as f:
+            existing = f.read()
+    with open(env_file, "a") as f:
+        for key, val in env_lines.items():
+            if f"export {key}=" not in existing:
+                f.write(f"export {key}={val}\n")
+    print(f"\n   ✅ ~/workshop/.env.w001 에 자동 저장됨")
+    print(f"      세션 재시작 시: source ~/workshop/.env.w001")
+except Exception as e:
+    print(f"\n   ⚠️  .env.w001 저장 실패 — 위 export 명령어를 수동 실행하세요")
