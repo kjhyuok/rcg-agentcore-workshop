@@ -168,23 +168,5 @@ def orchestrator_agent(payload: dict) -> dict:
     }
 
 
-# ============================================================
-# 로컬 테스트
-# ============================================================
 if __name__ == "__main__":
-    print("Multi-Agent 오케스트레이터 (A2A)")
-    print("=" * 50)
-    print(f"등록된 Agent ARN: {json.dumps(AGENT_REGISTRY, indent=2)}")
-    print()
-
-    test_cases = [
-        {"message": "고객 C001에게 맞는 상품 추천해주세요", "session_id": "test-orch-001"},
-        {"message": "주문번호 ORD-001 배송이 늦어지고 있어요", "session_id": "test-orch-002"},
-        {"message": "이번 주 재고 상황 분석해주세요", "session_id": "test-orch-003"},
-    ]
-
-    for tc in test_cases:
-        print(f"\n[입력] {tc['message']}")
-        # 로컬 테스트에서는 분류만 확인
-        classification = classify_intent(tc["message"])
-        print(f"[분류] {classification}")
+    app.run()

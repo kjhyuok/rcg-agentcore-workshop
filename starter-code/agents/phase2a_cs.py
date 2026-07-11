@@ -147,14 +147,4 @@ def cs_agent(payload: dict) -> dict:
 
 
 if __name__ == "__main__":
-    print("📞 CS 자동화 Agent (AgentCore + Memory + Browser)")
-    print("=" * 50)
-    test_input = {
-        "message": "주문번호 ORD-20260620-003인데요, 보조배터리가 충전이 안 됩니다. 환불 받고 싶어요.",
-        "session_id": "test-cs-001",
-        "actor_id": "C003",
-    }
-    result = cs_agent(test_input)
-    print(f"\nAgent: {result['response']}")
-else:
     app.run()
