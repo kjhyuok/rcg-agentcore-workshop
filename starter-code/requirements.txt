@@ -3,5 +3,5 @@ strands-agents-tools>=0.1
 bedrock-agentcore>=0.1
 boto3>=1.35
 mcp
-playwright
 nest-asyncio
+aws-opentelemetry-distro>=0.10.0

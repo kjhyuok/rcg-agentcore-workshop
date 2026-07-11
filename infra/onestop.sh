@@ -15,6 +15,8 @@ ROLE_NAME="${PREFIX}-lambda-role"
 ROLE_ARN="arn:aws:iam::${ACCOUNT_ID}:role/${ROLE_NAME}"
 GW_ROLE_NAME="${PREFIX}-gateway-role"
 GW_ROLE_ARN="arn:aws:iam::${ACCOUNT_ID}:role/${GW_ROLE_NAME}"
+RT_ROLE_NAME="${PREFIX}-runtime-role"
+RT_ROLE_ARN="arn:aws:iam::${ACCOUNT_ID}:role/${RT_ROLE_NAME}"
 
 echo "╔══════════════════════════════════════════════════════════╗"
 echo "║  🚀 RCG AgentCore Workshop — 원스톱 배포                ║"
@@ -70,8 +72,42 @@ aws iam put-role-policy \
     }]
   }" 2>/dev/null || true
 
-echo "  ⏳ IAM 전파 대기 (10초)..."
-sleep 10
+# Runtime Role (AgentCore Runtime 실행용)
+aws iam create-role \
+  --role-name "${RT_ROLE_NAME}" \
+  --assume-role-policy-document '{
+    "Version": "2012-10-17",
+    "Statement": [{
+      "Effect": "Allow",
+      "Principal": {"Service": "bedrock-agentcore.amazonaws.com"},
+      "Action": "sts:AssumeRole"
+    }]
+  }' 2>/dev/null && echo "  ✅ ${RT_ROLE_NAME} 생성" || echo "  ℹ️  ${RT_ROLE_NAME} 이미 존재"
+
+aws iam put-role-policy \
+  --role-name "${RT_ROLE_NAME}" \
+  --policy-name "RuntimePermissions" \
+  --policy-document "{
+    \"Version\": \"2012-10-17\",
+    \"Statement\": [{
+      \"Effect\": \"Allow\",
+      \"Action\": [
+        \"bedrock:*\",
+        \"bedrock-agentcore:*\",
+        \"bedrock-agentcore-control:*\",
+        \"lambda:InvokeFunction\",
+        \"aws-marketplace:ViewSubscriptions\",
+        \"aws-marketplace:Subscribe\",
+        \"s3:*\",
+        \"logs:*\",
+        \"cloudwatch:*\"
+      ],
+      \"Resource\": \"*\"
+    }]
+  }" 2>/dev/null || true
+
+echo "  ⏳ IAM 전파 대기 (30초)..."
+sleep 30
 
 # ============================================================
 # 2. Lambda 11개 배포
@@ -162,6 +198,7 @@ echo "  export ACCOUNT_ID=${ACCOUNT_ID}"
 echo "  export PARTICIPANT_ID=${PID}"
 echo "  export MOCK_SITE_URL=${MOCK_URL}"
 echo "  export GATEWAY_ROLE_ARN=${GW_ROLE_ARN}"
+echo "  export RUNTIME_ROLE_ARN=${RT_ROLE_ARN}"
 echo ""
 echo "╚══════════════════════════════════════════════════════════╝"
 echo ""
@@ -174,7 +211,29 @@ export ACCOUNT_ID=${ACCOUNT_ID}
 export PARTICIPANT_ID=${PID}
 export MOCK_SITE_URL=${MOCK_URL}
 export GATEWAY_ROLE_ARN=${GW_ROLE_ARN}
+export RUNTIME_ROLE_ARN=${RT_ROLE_ARN}
 EOF
+
+# ============================================================
+# Observability 사전 설정 (Transaction Search + Tracing)
+# 리전당 1회 설정, 이미 되어있으면 무시됨
+# ============================================================
+echo ""
+echo "[Observability] Transaction Search 활성화..."
+
+aws logs put-resource-policy --policy-name TransactionSearchXRayPolicy --policy-document "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Principal\":{\"Service\":\"xray.amazonaws.com\"},\"Action\":[\"logs:PutLogEvents\",\"logs:CreateLogStream\",\"logs:CreateLogGroup\"],\"Resource\":\"arn:aws:logs:${REGION}:${ACCOUNT_ID}:log-group:aws/spans:*\"}]}" --region ${REGION} 2>/dev/null && echo "  ✅ CloudWatch Logs Resource Policy 생성" || echo "  ℹ️  Resource Policy 이미 존재 (정상)"
+
+aws xray update-trace-segment-destination \
+  --destination CloudWatchLogs \
+  --region ${REGION} 2>/dev/null && echo "  ✅ X-Ray → CloudWatch Logs 전송 활성화" || echo "  ℹ️  이미 활성화됨 (정상)"
+
+aws xray update-indexing-rule \
+  --name "Default" \
+  --rule '{"Probabilistic": {"DesiredSamplingPercentage": 1.0}}' \
+  --region ${REGION} 2>/dev/null && echo "  ✅ Trace Indexing 1% 설정" || echo "  ℹ️  이미 설정됨 (정상)"
+
+aws application-signals start-discovery \
+  --region ${REGION} 2>/dev/null && echo "  ✅ Application Signals 활성화" || echo "  ℹ️  이미 활성화됨 (정상)"
 
 echo ""
 echo "💡 환경변수 복구: source .env.${PID}"

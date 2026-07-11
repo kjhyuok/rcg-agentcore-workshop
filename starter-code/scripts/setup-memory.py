@@ -1,8 +1,14 @@
 """
 Memory 생성 + Strategy 등록 스크립트
 참가자가 Phase 2에서 실행합니다.
+
+공식 API 참조:
+- Control plane: boto3.client("bedrock-agentcore-control")
+- create_memory: name, eventExpiryDuration 필수
+- strategies는 create_memory 또는 update_memory에서 설정
 """
 import os
+import time
 import boto3
 
 REGION = os.environ.get("AWS_REGION", "us-east-1")
@@ -16,58 +22,94 @@ client = boto3.client("bedrock-agentcore-control", region_name=REGION)
 # ============================================================
 print(f"🧠 Memory 생성: {MEMORY_NAME}")
 
+memory_id = None
+
+# 기존 Memory 확인
 try:
-    mem_resp = client.create_memory(
-        name=MEMORY_NAME,
-        description="RCG Workshop — 고객 맥락 및 대화 이력 저장",
-    )
-    memory_id = mem_resp["memoryId"]
-    print(f"✅ Memory 생성 완료: {memory_id}")
-except client.exceptions.ConflictException:
     mems = client.list_memories()
-    memory_id = next(m["memoryId"] for m in mems["items"] if m["name"] == MEMORY_NAME)
-    print(f"ℹ️  Memory 이미 존재: {memory_id}")
+    for m in mems.get("items", mems.get("memories", [])):
+        if m.get("name") == MEMORY_NAME:
+            memory_id = m["memoryId"]
+            print(f"ℹ️  Memory 이미 존재: {memory_id}")
+            break
+except Exception:
+    pass
 
-# ============================================================
-# 2. Strategy 등록 (3가지)
-# ============================================================
-print("\n🧠 Memory Strategy 등록")
+if not memory_id:
+    # strategies를 create_memory에 포함 시도
+    strategies = [
+        {
+            "semanticMemoryStrategy": {
+                "name": "CustomerFacts",
+                "namespaces": ["users/{actorId}/facts"],
+            }
+        },
+        {
+            "summaryMemoryStrategy": {
+                "name": "SessionSummaries",
+                "namespaces": ["users/{actorId}/summaries/{sessionId}"],
+            }
+        },
+        {
+            "userPreferenceMemoryStrategy": {
+                "name": "CustomerPreferences",
+                "namespaces": ["users/{actorId}/preferences"],
+            }
+        },
+    ]
 
-strategies = [
-    {
-        "userPreferenceMemoryStrategy": {
-            "name": "CustomerPreferences",
-            "description": "고객의 반복적 선호, 알러지, 스타일을 기억",
-            "namespaces": ["/preferences/{actorId}/"],
-        }
-    },
-    {
-        "summaryMemoryStrategy": {
-            "name": "SessionSummaries",
-            "description": "각 세션의 대화 요약을 저장",
-            "namespaces": ["/summaries/{actorId}/{sessionId}/"],
-        }
-    },
-    {
-        "semanticMemoryStrategy": {
-            "name": "DomainFacts",
-            "description": "고객이 언급한 도메인 사실 (피부타입, 매장 위치 등)",
-            "namespaces": ["/facts/{actorId}/"],
-        }
-    },
-]
-
-for strategy in strategies:
     try:
-        client.update_memory_strategies(
-            memoryId=memory_id,
-            addStrategies=[strategy],
+        mem_resp = client.create_memory(
+            name=MEMORY_NAME,
+            description="RCG Workshop — 고객 맥락 및 대화 이력 저장",
+            eventExpiryDuration=30,
+            strategies=strategies,
         )
-        strategy_name = list(strategy.values())[0]["name"]
-        print(f"  ✅ {strategy_name}")
+        memory_id = mem_resp["memoryId"]
+        print(f"✅ Memory 생성 완료: {memory_id}")
+    except TypeError as e:
+        # strategies 파라미터를 지원하지 않는 boto3 버전
+        print(f"  ℹ️  strategies 파라미터 미지원, 기본 생성 후 update...")
+        mem_resp = client.create_memory(
+            name=MEMORY_NAME,
+            description="RCG Workshop — 고객 맥락 및 대화 이력 저장",
+            eventExpiryDuration=30,
+        )
+        memory_id = mem_resp["memoryId"]
+        print(f"✅ Memory 생성 완료: {memory_id}")
+
+        # update_memory로 strategies 추가
+        try:
+            client.update_memory(
+                memoryId=memory_id,
+                strategies=strategies,
+            )
+            print("  ✅ Strategies 추가 완료")
+        except Exception as e2:
+            print(f"  ⚠️  Strategies 추가 실패 (수동 설정 필요): {e2}")
     except Exception as e:
-        strategy_name = list(strategy.values())[0]["name"]
-        print(f"  ⚠️  {strategy_name}: {e}")
+        print(f"  ❌ Memory 생성 실패: {e}")
+        raise
+
+# ============================================================
+# 2. Memory READY 대기
+# ============================================================
+print("  ⏳ Memory 활성화 대기 중...")
+for i in range(24):
+    try:
+        mem_info = client.get_memory(memoryId=memory_id)
+        status = mem_info.get("status", "")
+        if status in ("READY", "ACTIVE"):
+            print(f"  ✅ Memory 상태: {status}")
+            break
+        if "FAIL" in status.upper():
+            print(f"  ❌ Memory 실패: {mem_info.get('failureReason', '')}")
+            break
+    except Exception:
+        pass
+    time.sleep(5)
+else:
+    print(f"  ⚠️  Memory 상태: {status} (시간 초과, 계속 진행)")
 
 # ============================================================
 # 3. 결과 출력
@@ -75,6 +117,6 @@ for strategy in strategies:
 print(f"\n{'='*50}")
 print(f"🎉 Memory 설정 완료!")
 print(f"   Memory ID: {memory_id}")
-print(f"\n   이 ID를 환경변수로 설정하세요:")
+print(f"\n   환경변수 설정:")
 print(f"   export AGENTCORE_MEMORY_ID={memory_id}")
 print(f"{'='*50}")
