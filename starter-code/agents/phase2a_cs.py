@@ -10,7 +10,6 @@ import boto3
 from strands import Agent
 from strands.models import BedrockModel
 from strands.tools.mcp import MCPClient
-from strands_tools.browser import AgentCoreBrowser
 from mcp.client.streamable_http import streamablehttp_client
 from bedrock_agentcore.runtime import BedrockAgentCoreApp
 
@@ -26,10 +25,6 @@ REGION = os.environ.get("AWS_REGION", "us-east-1")
 # ============================================================
 memory_client = boto3.client("bedrock-agentcore", region_name=REGION)
 
-# ============================================================
-# Browser Tool 초기화
-# ============================================================
-browser_tool = AgentCoreBrowser(region=REGION)
 
 # ============================================================
 # System Prompt
@@ -124,18 +119,20 @@ def cs_agent(payload: dict) -> dict:
     context = fetch_customer_context(actor_id, user_message)
     prompt_with_context = SYSTEM_PROMPT.format(customer_context=context)
 
-    # Gateway MCP + Browser Tool
+    # Gateway MCP + Browser Tool (lazy init)
     mcp_client = MCPClient(
         lambda: streamablehttp_client(GATEWAY_URL)
     )
 
-    with mcp_client:
-        agent = Agent(
-            model=model,
-            system_prompt=prompt_with_context,
-            tools=[mcp_client, browser_tool.browser],
-        )
-        result = agent(user_message)
+    from strands_tools.browser import AgentCoreBrowser
+    browser_tool = AgentCoreBrowser(region=REGION)
+
+    agent = Agent(
+        model=model,
+        system_prompt=prompt_with_context,
+        tools=[mcp_client, browser_tool.browser],
+    )
+    result = agent(user_message)
 
     # Memory에 대화 저장
     save_turn(actor_id, session_id, user_message, str(result))
