@@ -5,7 +5,7 @@ Memory 생성 + Strategy 등록 스크립트
 공식 API 참조:
 - Control plane: boto3.client("bedrock-agentcore-control")
 - create_memory: name, eventExpiryDuration 필수
-- strategies는 create_memory 또는 update_memory에서 설정
+- memoryStrategies는 create_memory 또는 update_memory에서 설정
 """
 import os
 import time
@@ -36,8 +36,8 @@ except Exception:
     pass
 
 if not memory_id:
-    # strategies를 create_memory에 포함 시도
-    strategies = [
+    # memoryStrategies를 create_memory에 포함 시도
+    memoryStrategies = [
         {
             "semanticMemoryStrategy": {
                 "name": "CustomerFacts",
@@ -63,13 +63,13 @@ if not memory_id:
             name=MEMORY_NAME,
             description="RCG Workshop — 고객 맥락 및 대화 이력 저장",
             eventExpiryDuration=30,
-            strategies=strategies,
+            memoryStrategies=memoryStrategies,
         )
         memory_id = mem_resp["memoryId"]
         print(f"✅ Memory 생성 완료: {memory_id}")
     except TypeError as e:
-        # strategies 파라미터를 지원하지 않는 boto3 버전
-        print(f"  ℹ️  strategies 파라미터 미지원, 기본 생성 후 update...")
+        # memoryStrategies 파라미터를 지원하지 않는 boto3 버전
+        print(f"  ℹ️  memoryStrategies 파라미터 미지원, 기본 생성 후 update...")
         mem_resp = client.create_memory(
             name=MEMORY_NAME,
             description="RCG Workshop — 고객 맥락 및 대화 이력 저장",
@@ -78,11 +78,11 @@ if not memory_id:
         memory_id = mem_resp["memoryId"]
         print(f"✅ Memory 생성 완료: {memory_id}")
 
-        # update_memory로 strategies 추가
+        # update_memory로 memoryStrategies 추가
         try:
             client.update_memory(
                 memoryId=memory_id,
-                strategies=strategies,
+                memoryStrategies=memoryStrategies,
             )
             print("  ✅ Strategies 추가 완료")
         except Exception as e2:
