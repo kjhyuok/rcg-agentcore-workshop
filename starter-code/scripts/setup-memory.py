@@ -65,17 +65,29 @@ if not memory_id:
             eventExpiryDuration=30,
             memoryStrategies=memoryStrategies,
         )
-        memory_id = mem_resp["memoryId"]
+        print(f"  [DEBUG] response keys: {list(mem_resp.keys())}")
+        memory_id = mem_resp.get("memoryId") or mem_resp.get("memory", {}).get("memoryId")
+        if not memory_id:
+            arn = mem_resp.get("memoryArn", "")
+            if arn:
+                memory_id = arn.split("/")[-1]
+        if not memory_id:
+            print(f"  [DEBUG] Full response: {mem_resp}")
+            raise KeyError(f"Cannot find memoryId in response")
         print(f"✅ Memory 생성 완료: {memory_id}")
     except TypeError as e:
-        # memoryStrategies 파라미터를 지원하지 않는 boto3 버전
         print(f"  ℹ️  memoryStrategies 파라미터 미지원, 기본 생성 후 update...")
         mem_resp = client.create_memory(
             name=MEMORY_NAME,
             description="RCG Workshop — 고객 맥락 및 대화 이력 저장",
             eventExpiryDuration=30,
         )
-        memory_id = mem_resp["memoryId"]
+        print(f"  [DEBUG] response keys: {list(mem_resp.keys())}")
+        memory_id = mem_resp.get("memoryId") or mem_resp.get("memory", {}).get("memoryId")
+        if not memory_id:
+            arn = mem_resp.get("memoryArn", "")
+            if arn:
+                memory_id = arn.split("/")[-1]
         print(f"✅ Memory 생성 완료: {memory_id}")
 
         # update_memory로 memoryStrategies 추가
