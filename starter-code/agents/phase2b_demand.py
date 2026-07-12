@@ -9,7 +9,6 @@ import boto3
 from strands import Agent
 from strands.models import BedrockModel
 from strands.tools.mcp import MCPClient
-from strands_tools.browser import AgentCoreBrowser
 from mcp.client.streamable_http import streamablehttp_client
 from bedrock_agentcore.runtime import BedrockAgentCoreApp
 
@@ -21,10 +20,9 @@ MEMORY_ID = os.environ.get("AGENTCORE_MEMORY_ID", "")
 REGION = os.environ.get("AWS_REGION", "us-east-1")
 
 # ============================================================
-# Memory Client & Browser Tool 초기화
+# Memory Client
 # ============================================================
 memory_client = boto3.client("bedrock-agentcore", region_name=REGION)
-browser_tool = AgentCoreBrowser(region=REGION)
 
 # ============================================================
 # System Prompt
@@ -116,10 +114,13 @@ def demand_agent(payload: dict) -> dict:
     history = fetch_order_history(actor_id)
     augmented_prompt = f"[이전 발주 이력]\n{history}\n\n[요청]\n{user_message}"
 
-    # Gateway MCP + Browser Tool
+    # Gateway MCP + Browser Tool (lazy init)
     mcp_client = MCPClient(
         lambda: streamablehttp_client(GATEWAY_URL)
     )
+
+    from strands_tools.browser import AgentCoreBrowser
+    browser_tool = AgentCoreBrowser(region=REGION)
 
     agent = Agent(
         model=model,
