@@ -13,7 +13,7 @@ import boto3
 
 REGION = os.environ.get("AWS_REGION", "us-east-1")
 ACCOUNT_ID = boto3.client("sts").get_caller_identity()["Account"]
-MEMORY_NAME = os.environ.get("MEMORY_NAME", f"rcg-workshop-memory-{ACCOUNT_ID[-4:]}")
+MEMORY_NAME = os.environ.get("MEMORY_NAME", f"rcg_workshop_memory_{ACCOUNT_ID[-4:]}")
 
 client = boto3.client("bedrock-agentcore-control", region_name=REGION)
 
