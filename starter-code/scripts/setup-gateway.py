@@ -8,7 +8,7 @@ import json
 import time
 import boto3
 
-REGION = os.environ.get("AWS_REGION", "us-east-1")
+REGION = os.environ.get("AWS_REGION", "us-west-2")
 ACCOUNT_ID = boto3.client("sts").get_caller_identity()["Account"]
 GATEWAY_NAME = os.environ.get("GATEWAY_NAME", f"rcg-workshop-gw-{ACCOUNT_ID[-4:]}")
 ROLE_ARN = os.environ.get("GATEWAY_ROLE_ARN", f"arn:aws:iam::{ACCOUNT_ID}:role/rcg-workshop-gateway-role")

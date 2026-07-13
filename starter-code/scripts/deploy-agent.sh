@@ -1,57 +1,60 @@
 #!/bin/bash
 # ============================================================
-# AgentCore Runtime 배포 스크립트
-# Usage: ./scripts/deploy-agent.sh <agent_file> <agent_name>
-# Example: ./scripts/deploy-agent.sh agents/phase1_recommend.py rcg_recommend_agent
+# AgentCore Runtime 배포 스크립트 (npm @aws/agentcore CLI)
+# Usage: ./scripts/deploy-agent.sh <phase>
+# Example: ./scripts/deploy-agent.sh phase1
 # ============================================================
 
 set -e
 
-# zip 유틸리티 설치 (SageMaker Code Editor에 없을 수 있음)
-sudo apt-get install -y zip 2>/dev/null || true
+PHASE=${1:-"phase1"}
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+BASE_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
+AGENT_DIR="${BASE_DIR}/agents/${PHASE}"
 
-# Deprecated warning 억제
-export AGENTCORE_SUPPRESS_RECOMMENDATION=1
-
-AGENT_FILE=${1:-"agents/phase1_recommend.py"}
-AGENT_NAME=${2:-"rcg_recommend_agent"}
-REGION=${AWS_REGION:-"us-east-1"}
-
-if [ -z "${RUNTIME_ROLE_ARN}" ]; then
-  echo "❌ RUNTIME_ROLE_ARN 환경변수가 설정되지 않았습니다."
-  echo "   먼저 실행: source ~/workshop/.env.\${PARTICIPANT_ID}"
-  echo "   (셋업이 처음이라면: bash infra/onestop.sh 먼저 실행)"
+if [ ! -d "${AGENT_DIR}" ]; then
+  echo "Error: ${AGENT_DIR} does not exist"
+  echo "Available phases: phase1, phase2a, phase2b, phase3"
   exit 1
 fi
 
-echo "🚀 AgentCore Runtime 배포"
-echo "   Agent: ${AGENT_FILE}"
-echo "   Name:  ${AGENT_NAME}"
-echo "   Region: ${REGION}"
+# Resolve AWS account ID and inject into aws-targets.json
+ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+REGION=${AWS_REGION:-"us-west-2"}
+TARGETS_FILE="${AGENT_DIR}/agentcore/aws-targets.json"
+
+cat > "${TARGETS_FILE}" << TARGETSEOF
+[
+  {
+    "name": "default",
+    "account": "${ACCOUNT_ID}",
+    "region": "${REGION}"
+  }
+]
+TARGETSEOF
+
+# Install CDK dependencies if needed
+CDK_DIR="${AGENT_DIR}/agentcore/cdk"
+if [ -d "${CDK_DIR}" ] && [ ! -d "${CDK_DIR}/node_modules" ]; then
+  echo "Installing CDK dependencies..."
+  cd "${CDK_DIR}" && npm install --silent
+fi
+
+echo "AgentCore Runtime Deploy"
+echo "   Phase:   ${PHASE}"
+echo "   Account: ${ACCOUNT_ID}"
+echo "   Region:  ${REGION}"
 echo "================================"
 
-# 1. Configure
-echo "⚙️  agentcore configure..."
-agentcore configure \
-  --entrypoint "${AGENT_FILE}" \
-  --name "${AGENT_NAME}" \
-  --runtime PYTHON_3_12 \
-  --deployment-type direct_code_deploy \
-  --execution-role "${RUNTIME_ROLE_ARN}" \
-  --disable-memory \
-  --non-interactive
-
-# 2. Deploy
-echo "📦 agentcore deploy..."
-agentcore deploy \
-  --env AGENTCORE_GATEWAY_URL="${AGENTCORE_GATEWAY_URL}" \
-  --env AGENTCORE_MEMORY_ID="${AGENTCORE_MEMORY_ID}" \
-  --env AWS_REGION="${REGION}" \
-  --env AGENT_OBSERVABILITY_ENABLED=true \
-  --auto-update-on-conflict
+cd "${AGENT_DIR}"
+agentcore deploy -y
 
 echo ""
-echo "✅ 배포 완료!"
+echo "Deploy complete!"
 echo "================================"
-echo "엔드포인트 확인:"
-agentcore status --agent "${AGENT_NAME}"
+echo ""
+echo "Test:"
+echo "  cd agents/${PHASE} && agentcore invoke --prompt \"test message\""
+echo ""
+echo "Local dev:"
+echo "  cd agents/${PHASE} && agentcore dev"

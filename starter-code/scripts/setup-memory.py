@@ -11,7 +11,7 @@ import os
 import time
 import boto3
 
-REGION = os.environ.get("AWS_REGION", "us-east-1")
+REGION = os.environ.get("AWS_REGION", "us-west-2")
 ACCOUNT_ID = boto3.client("sts").get_caller_identity()["Account"]
 MEMORY_NAME = os.environ.get("MEMORY_NAME", f"rcg_workshop_memory_{ACCOUNT_ID[-4:]}")
 

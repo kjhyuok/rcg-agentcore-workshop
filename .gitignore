@@ -4,3 +4,9 @@ __pycache__/
 .env.*
 *.zip
 .DS_Store
+*.egg-info/
+
+# AgentCore CLI artifacts
+agentcore/.cache/
+agentcore/.cli/
+agentcore/cdk/
