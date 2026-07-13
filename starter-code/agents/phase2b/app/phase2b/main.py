@@ -12,7 +12,7 @@ app = BedrockAgentCoreApp()
 log = app.logger
 
 MEMORY_ID = os.environ.get("AGENTCORE_MEMORY_ID", "")
-REGION = os.environ.get("AWS_REGION", "us-east-1")
+REGION = os.environ.get("AWS_REGION", "us-west-2")
 
 memory_client = boto3.client("bedrock-agentcore", region_name=REGION)
 

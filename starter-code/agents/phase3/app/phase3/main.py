@@ -10,7 +10,7 @@ from model.load import load_model
 app = BedrockAgentCoreApp()
 log = app.logger
 
-REGION = os.environ.get("AWS_REGION", "us-east-1")
+REGION = os.environ.get("AWS_REGION", "us-west-2")
 
 AGENT_REGISTRY = {
     "recommend": os.environ.get("AGENT_ARN_RECOMMEND", ""),
