@@ -38,6 +38,7 @@ agentcore configure \
 echo "📦 agentcore deploy..."
 agentcore deploy \
   --env AGENTCORE_GATEWAY_URL="${AGENTCORE_GATEWAY_URL}" \
+  --env AGENTCORE_MEMORY_ID="${AGENTCORE_MEMORY_ID}" \
   --env AWS_REGION="${REGION}" \
   --env AGENT_OBSERVABILITY_ENABLED=true \
   --auto-update-on-conflict
