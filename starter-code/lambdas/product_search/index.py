@@ -18,6 +18,13 @@ PRODUCTS = {
     "P010": {"product_id": "P010", "name": "너트 그래놀라 바", "category": "건강식품", "price": 2200, "rating": 4.0, "stock": 120, "tags": ["간식", "견과류포함", "에너지"]},
     "P011": {"product_id": "P011", "name": "선크림 SPF50+", "category": "뷰티", "price": 22000, "rating": 4.7, "stock": 70, "tags": ["자외선차단", "데일리", "저자극"]},
     "P012": {"product_id": "P012", "name": "무선 충전 보조배터리", "category": "전자기기", "price": 35000, "rating": 4.3, "stock": 40, "tags": ["충전", "휴대", "대용량"]},
+    "P013": {"product_id": "P013", "name": "저당 프로틴 워터", "category": "건강식품", "price": 2500, "rating": 4.2, "stock": 140, "tags": ["무설탕", "고단백", "저칼로리"]},
+    "P014": {"product_id": "P014", "name": "유기농 현미 누룽지", "category": "건강식품", "price": 3800, "rating": 4.4, "stock": 100, "tags": ["유기농", "식이섬유", "간식"]},
+    "P015": {"product_id": "P015", "name": "병아리콩 고단백 스낵", "category": "건강식품", "price": 3200, "rating": 4.1, "stock": 130, "tags": ["고단백", "저염", "비건"]},
+    "P016": {"product_id": "P016", "name": "냉동 새우볶음밥", "category": "간편식", "price": 5200, "rating": 4.3, "stock": 150, "tags": ["간편", "냉동", "단백질"]},
+    "P017": {"product_id": "P017", "name": "컵누들 얼큰김치맛", "category": "간편식", "price": 2300, "rating": 4.0, "stock": 300, "tags": ["매콤", "간편", "가성비"]},
+    "P018": {"product_id": "P018", "name": "블루투스 무선 이어폰", "category": "전자기기", "price": 45000, "rating": 4.5, "stock": 55, "tags": ["무선", "휴대", "저소음"]},
+    "P019": {"product_id": "P019", "name": "저당 두유 190ml", "category": "음료", "price": 2000, "rating": 4.2, "stock": 220, "tags": ["무설탕", "식물성", "저칼로리"]},
 }
 
 
