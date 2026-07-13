@@ -1,1 +1,6 @@
-[]
+[
+  {
+    "name": "default",
+    "region": "us-west-2"
+  }
+]
