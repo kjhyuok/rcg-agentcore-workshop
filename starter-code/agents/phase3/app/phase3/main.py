@@ -36,7 +36,7 @@ SYNTHESIS_PROMPT = """당신은 최종 응답을 다듬는 편집자입니다.
 원본 정보를 빠뜨리지 마세요. 마크다운 형식으로 작성합니다."""
 
 model = BedrockModel(
-    model_id="us.anthropic.claude-sonnet-5",
+    model_id="us.anthropic.claude-sonnet-4-6",
     region_name=REGION,
 )
 
