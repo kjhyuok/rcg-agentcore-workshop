@@ -1,6 +1,7 @@
 [
   {
     "name": "default",
+    "account": "PLACEHOLDER",
     "region": "us-west-2"
   }
 ]

@@ -18,9 +18,25 @@ if [ ! -d "${AGENT_DIR}" ]; then
   exit 1
 fi
 
+# Resolve AWS account ID and inject into aws-targets.json
+ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+REGION=${AWS_REGION:-"us-west-2"}
+TARGETS_FILE="${AGENT_DIR}/agentcore/aws-targets.json"
+
+cat > "${TARGETS_FILE}" << EOF
+[
+  {
+    "name": "default",
+    "account": "${ACCOUNT_ID}",
+    "region": "${REGION}"
+  }
+]
+EOF
+
 echo "AgentCore Runtime Deploy"
-echo "   Phase:  ${PHASE}"
-echo "   Dir:    ${AGENT_DIR}"
+echo "   Phase:   ${PHASE}"
+echo "   Account: ${ACCOUNT_ID}"
+echo "   Region:  ${REGION}"
 echo "================================"
 
 cd "${AGENT_DIR}"
