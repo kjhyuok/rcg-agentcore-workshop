@@ -17,6 +17,13 @@ AGENT_FILE=${1:-"agents/phase1_recommend.py"}
 AGENT_NAME=${2:-"rcg_recommend_agent"}
 REGION=${AWS_REGION:-"us-east-1"}
 
+if [ -z "${RUNTIME_ROLE_ARN}" ]; then
+  echo "❌ RUNTIME_ROLE_ARN 환경변수가 설정되지 않았습니다."
+  echo "   먼저 실행: source ~/workshop/.env.\${PARTICIPANT_ID}"
+  echo "   (셋업이 처음이라면: bash infra/onestop.sh 먼저 실행)"
+  exit 1
+fi
+
 echo "🚀 AgentCore Runtime 배포"
 echo "   Agent: ${AGENT_FILE}"
 echo "   Name:  ${AGENT_NAME}"
