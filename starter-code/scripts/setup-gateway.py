@@ -160,8 +160,9 @@ print(f"   export AGENTCORE_GATEWAY_URL={gateway_url}")
 print(f"   export GATEWAY_ID={gateway_id}")
 print(f"{'='*50}")
 
-# .env.w001에 자동 추가
-env_file = os.path.expanduser("~/workshop/.env.w001")
+# .env.{PARTICIPANT_ID}에 자동 추가 (onestop.sh가 만든 파일과 동일한 PID를 사용해야 함)
+PARTICIPANT_ID = os.environ.get("PARTICIPANT_ID", "w001")
+env_file = os.path.expanduser(f"~/workshop/.env.{PARTICIPANT_ID}")
 env_lines = {
     "AGENTCORE_GATEWAY_URL": gateway_url,
     "GATEWAY_ID": gateway_id,
@@ -175,7 +176,7 @@ try:
         for key, val in env_lines.items():
             if f"export {key}=" not in existing:
                 f.write(f"export {key}={val}\n")
-    print(f"\n   ✅ ~/workshop/.env.w001 에 자동 저장됨")
-    print(f"      세션 재시작 시: source ~/workshop/.env.w001")
+    print(f"\n   ✅ {env_file} 에 자동 저장됨")
+    print(f"      세션 재시작 시: source {env_file}")
 except Exception as e:
-    print(f"\n   ⚠️  .env.w001 저장 실패 — 위 export 명령어를 수동 실행하세요")
+    print(f"\n   ⚠️  {env_file} 저장 실패 — 위 export 명령어를 수동 실행하세요")

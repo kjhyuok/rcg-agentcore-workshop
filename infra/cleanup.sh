@@ -30,14 +30,20 @@ aws s3 rb "s3://${BUCKET}" --force --region ${REGION} 2>/dev/null && echo "  삭
 
 echo ""
 echo "[3/3] IAM Role 삭제..."
-for role in "${PREFIX}-lambda-role" "${PREFIX}-gateway-role"; do
+for role in "${PREFIX}-lambda-role" "${PREFIX}-gateway-role" "${PREFIX}-runtime-role"; do
   # Detach policies first
   aws iam list-attached-role-policies --role-name "$role" --query 'AttachedPolicies[].PolicyArn' --output text 2>/dev/null | tr '\t' '\n' | while read arn; do
     aws iam detach-role-policy --role-name "$role" --policy-arn "$arn" 2>/dev/null
   done
   aws iam delete-role-policy --role-name "$role" --policy-name "InvokeLambdaPolicy" 2>/dev/null || true
+  aws iam delete-role-policy --role-name "$role" --policy-name "RuntimePermissions" 2>/dev/null || true
   aws iam delete-role --role-name "$role" 2>/dev/null && echo "  삭제: $role" || true
 done
+
+echo ""
+echo "⚠️  AgentCore Gateway / Memory / Runtime 리소스는 이 스크립트가 삭제하지 않습니다."
+echo "   Console(Bedrock → AgentCore)에서 직접 삭제하거나, boto3 bedrock-agentcore-control의"
+echo "   delete_gateway / delete_memory / delete_agent_runtime API를 별도로 호출하세요."
 
 echo ""
 echo "✅ 정리 완료"

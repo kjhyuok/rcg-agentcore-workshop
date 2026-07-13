@@ -71,6 +71,17 @@ ORDERS = {
         "delivered_at": "2026-06-20",
         "payment_method": "네이버페이",
     },
+    "ORD-2024-555": {
+        "order_id": "ORD-2024-555",
+        "customer_id": "C002",
+        "status": "IN_TRANSIT",
+        "items": [{"name": "한방 샴푸 세트", "price": 42000, "quantity": 1}],
+        "total_amount": 42000,
+        "ordered_at": "2026-06-28",
+        "estimated_delivery": "2026-07-01",
+        "tracking_number": "LG555666777",
+        "payment_method": "신용카드",
+    },
 }
 
 
