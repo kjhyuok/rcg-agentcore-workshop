@@ -33,6 +33,13 @@ cat > "${TARGETS_FILE}" << EOF
 ]
 EOF
 
+# Install CDK dependencies if needed
+CDK_DIR="${AGENT_DIR}/agentcore/cdk"
+if [ -d "${CDK_DIR}" ] && [ ! -d "${CDK_DIR}/node_modules" ]; then
+  echo "Installing CDK dependencies..."
+  cd "${CDK_DIR}" && npm install --silent
+fi
+
 echo "AgentCore Runtime Deploy"
 echo "   Phase:   ${PHASE}"
 echo "   Account: ${ACCOUNT_ID}"
