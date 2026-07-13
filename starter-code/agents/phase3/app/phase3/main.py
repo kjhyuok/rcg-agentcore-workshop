@@ -4,11 +4,10 @@ import json
 import uuid
 import boto3
 from strands import Agent
+from strands.models.bedrock import BedrockModel
 from bedrock_agentcore.runtime import BedrockAgentCoreApp
-from model.load import load_model
 
 app = BedrockAgentCoreApp()
-log = app.logger
 
 REGION = os.environ.get("AWS_REGION", "us-west-2")
 
@@ -36,14 +35,16 @@ SYNTHESIS_PROMPT = """당신은 최종 응답을 다듬는 편집자입니다.
 전문 Agent의 응답을 받아 고객 친화적인 최종 답변으로 다듬으세요.
 원본 정보를 빠뜨리지 마세요. 마크다운 형식으로 작성합니다."""
 
+model = BedrockModel(
+    model_id="us.anthropic.claude-sonnet-4-20250514",
+    region_name=REGION,
+)
+
 bedrock_client = boto3.client("bedrock-agent-runtime", region_name=REGION)
 
 
 def classify_intent(message: str) -> dict:
-    classifier = Agent(
-        model=load_model(),
-        system_prompt=CLASSIFIER_PROMPT,
-    )
+    classifier = Agent(model=model, system_prompt=CLASSIFIER_PROMPT)
     result = classifier(message)
     try:
         return json.loads(str(result))
@@ -71,10 +72,7 @@ def invoke_specialist_agent(agent_arn: str, payload: dict) -> str:
 
 
 def synthesize_response(original_message: str, specialist_response: str, intent: str) -> str:
-    synthesizer = Agent(
-        model=load_model(),
-        system_prompt=SYNTHESIS_PROMPT,
-    )
+    synthesizer = Agent(model=model, system_prompt=SYNTHESIS_PROMPT)
     prompt = f"""## 원본 요청
 {original_message}
 
@@ -88,23 +86,20 @@ def synthesize_response(original_message: str, specialist_response: str, intent:
 
 @app.entrypoint
 async def invoke(payload, context):
-    log.info("Invoking Orchestrator Agent...")
-
     user_message = payload.get("prompt", payload.get("message", ""))
-    session_id = getattr(context, 'session_id', 'default-session')
     actor_id = payload.get("actor_id", "anonymous")
+    session_id = getattr(context, "session_id", "default-session")
 
     classification = classify_intent(user_message)
     intent = classification.get("intent", "recommend")
     confidence = classification.get("confidence", 0.0)
 
     agent_arn = AGENT_REGISTRY.get(intent, "")
-    specialist_payload = {
+    specialist_response = invoke_specialist_agent(agent_arn, {
         "message": user_message,
         "session_id": session_id,
         "actor_id": actor_id,
-    }
-    specialist_response = invoke_specialist_agent(agent_arn, specialist_payload)
+    })
 
     if confidence >= 0.85:
         final_response = specialist_response
@@ -113,11 +108,7 @@ async def invoke(payload, context):
 
     result = json.dumps({
         "response": final_response,
-        "metadata": {
-            "intent": intent,
-            "confidence": confidence,
-            "reason": classification.get("reason", ""),
-        },
+        "metadata": {"intent": intent, "confidence": confidence},
     }, ensure_ascii=False)
 
     yield {"event": {"contentBlockStart": {"start": {"text": ""}}}}

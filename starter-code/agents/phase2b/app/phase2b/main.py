@@ -1,22 +1,19 @@
 """Phase 2B: 수요 예측 Agent — AgentCore Runtime + Memory"""
 import os
-from collections import OrderedDict
 import boto3
 from strands import Agent
-from strands.agent.conversation_manager.null_conversation_manager import NullConversationManager
+from strands.models.bedrock import BedrockModel
+from strands.tools.mcp import MCPClient
+from mcp.client.streamable_http import streamablehttp_client
 from bedrock_agentcore.runtime import BedrockAgentCoreApp
-from model.load import load_model
-from mcp_client.client import get_streamable_http_mcp_client
 
 app = BedrockAgentCoreApp()
-log = app.logger
 
+GATEWAY_URL = os.environ.get("AGENTCORE_GATEWAY_URL", "")
 MEMORY_ID = os.environ.get("AGENTCORE_MEMORY_ID", "")
 REGION = os.environ.get("AWS_REGION", "us-west-2")
 
 memory_client = boto3.client("bedrock-agentcore", region_name=REGION)
-
-mcp_clients = [get_streamable_http_mcp_client()]
 
 SYSTEM_PROMPT = """당신은 커머스 수요 예측 및 발주 관리 AI Agent입니다.
 
@@ -38,6 +35,13 @@ SYSTEM_PROMPT = """당신은 커머스 수요 예측 및 발주 관리 AI Agent�
 - 품절 위험 상품별 분석 (트렌드 + 외부 요인 반영)
 - 발주 권고 (상품, 수량, 금액, 긴급도, 승인 필요 여부)
 """
+
+model = BedrockModel(
+    model_id="us.anthropic.claude-sonnet-4-20250514",
+    region_name=REGION,
+)
+
+mcp_client = MCPClient(lambda: streamablehttp_client(GATEWAY_URL)) if GATEWAY_URL else None
 
 
 def fetch_order_history(actor_id: str) -> str:
@@ -74,46 +78,19 @@ def save_order_decision(actor_id: str, session_id: str, user_msg: str, agent_res
         pass
 
 
-tools = []
-for mcp_client in mcp_clients:
-    if mcp_client:
-        tools.append(mcp_client)
-
-
-def agent_factory():
-    cache = OrderedDict()
-    def get_or_create_agent(session_id):
-        if session_id in cache:
-            cache.move_to_end(session_id)
-            return cache[session_id]
-        if len(cache) >= 128:
-            cache.popitem(last=False)
-        cache[session_id] = Agent(
-            model=load_model(),
-            system_prompt=SYSTEM_PROMPT,
-            tools=tools,
-            conversation_manager=NullConversationManager(),
-        )
-        return cache[session_id]
-    return get_or_create_agent
-
-get_or_create_agent = agent_factory()
-
-
 @app.entrypoint
 async def invoke(payload, context):
-    log.info("Invoking Demand Agent...")
-
-    session_id = getattr(context, 'session_id', 'default-session')
+    actor_id = payload.get("actor_id", "store-manager")
     prompt = payload.get("prompt", payload.get("message", ""))
 
-    agent = get_or_create_agent(session_id)
+    history = fetch_order_history(actor_id)
+    augmented_prompt = f"[이전 발주 이력]\n{history}\n\n[요청]\n{prompt}"
 
-    async for event in agent.stream_async(prompt):
+    tools = [mcp_client] if mcp_client else []
+    agent = Agent(model=model, system_prompt=SYSTEM_PROMPT, tools=tools)
+
+    async for event in agent.stream_async(augmented_prompt):
         if not isinstance(event, dict) or "event" not in event:
-            continue
-        cbs = event["event"].get("contentBlockStart")
-        if cbs is not None and not cbs.get("start"):
             continue
         yield event
 
