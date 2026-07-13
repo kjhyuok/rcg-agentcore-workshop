@@ -96,7 +96,7 @@ def save_order_decision(actor_id: str, session_id: str, user_msg: str, agent_res
 # Agent 생성
 # ============================================================
 model = BedrockModel(
-    model_id="us.anthropic.claude-sonnet-4-6",
+    model_id="us.anthropic.claude-sonnet-5",
     region_name=REGION,
 )
 

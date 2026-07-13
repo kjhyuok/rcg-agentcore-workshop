@@ -135,7 +135,7 @@ def save_turn(actor_id: str, session_id: str, user_msg: str, agent_response: str
 # Agent 생성
 # ============================================================
 model = BedrockModel(
-    model_id="us.anthropic.claude-sonnet-4-6",
+    model_id="us.anthropic.claude-sonnet-5",
     region_name=REGION,
 )
 

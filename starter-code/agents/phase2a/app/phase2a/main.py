@@ -43,7 +43,7 @@ SYSTEM_PROMPT = """당신은 커머스 고객서비스(CS) 자동화 AI Agent입
 """
 
 model = BedrockModel(
-    model_id="us.anthropic.claude-sonnet-4-20250514",
+    model_id="us.anthropic.claude-sonnet-5",
     region_name=REGION,
 )
 

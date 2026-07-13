@@ -63,7 +63,7 @@ SYSTEM_PROMPT = """당신은 리테일 상품 추천 전문가입니다.
 # 모델
 # ============================================================
 model = BedrockModel(
-    model_id="us.anthropic.claude-sonnet-4-6",
+    model_id="us.anthropic.claude-sonnet-5",
     region_name=REGION,
 )
 
