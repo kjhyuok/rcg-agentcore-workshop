@@ -6,6 +6,7 @@ Memory로 고객 문맥 유지, Browser로 경쟁사 가격 조회.
 import os
 import json
 import uuid
+import threading
 import boto3
 from datetime import datetime, timezone
 from strands import Agent
@@ -25,6 +26,29 @@ REGION = os.environ.get("AWS_REGION", "us-east-1")
 # Memory Client (boto3 data plane)
 # ============================================================
 memory_client = boto3.client("bedrock-agentcore", region_name=REGION)
+
+# ============================================================
+# MCPClient는 모듈 로드 시 1회만 생성 (요청마다 새로 만들면 매번 핸드셰이크 비용)
+#
+# Browser Tool은 여전히 "지연" 생성하지만, 요청마다가 아니라 프로세스당 1회만
+# 만들도록 싱글톤으로 캐싱합니다. import 시점에 즉시 생성하면 Playwright 초기화가
+# Runtime의 30초 콜드스타트 타임아웃에 걸릴 수 있어(과거 실제로 겪은 문제),
+# 첫 요청이 들어올 때 최초 1회만 만들고 이후 요청은 캐시된 인스턴스를 재사용합니다.
+# ============================================================
+mcp_client = MCPClient(lambda: streamablehttp_client(GATEWAY_URL))
+
+_browser_tool = None
+_browser_tool_lock = threading.Lock()
+
+
+def get_browser_tool():
+    global _browser_tool
+    if _browser_tool is None:
+        with _browser_tool_lock:
+            if _browser_tool is None:
+                from strands_tools.browser import AgentCoreBrowser
+                _browser_tool = AgentCoreBrowser(region=REGION)
+    return _browser_tool
 
 
 # ============================================================
@@ -50,6 +74,9 @@ SYSTEM_PROMPT = """당신은 커머스 고객서비스(CS) 자동화 AI Agent입
 ## 출력 형식
 - 공감 표현 → 상황 확인 → 정책 안내 → 처리 결과 순서
 - 에스컬레이션 시 "별도 승인이 필요합니다" 명시
+- 마크다운 표는 비교할 값이 3개 이상일 때만 사용. 항목이 1~2개면 줄글로 간결하게
+- 이모지는 상태 표시(✅⚠️📦) 용도로 응답당 3개 이내로 제한. 장식용 이모지는 쓰지 않음
+- 헤딩(##)은 답변이 3문단 이상으로 길어질 때만 사용
 
 ## 고객 맥락 (Memory에서 가져온 정보)
 {customer_context}
@@ -111,8 +138,13 @@ app = BedrockAgentCoreApp()
 
 
 @app.entrypoint
-def cs_agent(payload: dict) -> dict:
-    """AgentCore Runtime 진입점"""
+async def cs_agent(payload: dict):
+    """AgentCore Runtime 진입점 (async generator = 토큰 스트리밍)
+
+    return 대신 yield로 토큰이 생성되는 즉시 흘려보냅니다.
+    Memory 저장(save_turn)은 응답을 다 보여준 뒤 백그라운드 스레드에서
+    처리 — 참가자가 답을 다 읽을 때까지 Memory 쓰기를 기다릴 필요 없음.
+    """
     user_message = payload.get("message", "")
     session_id = payload.get("session_id", f"sess-{uuid.uuid4()}")
     actor_id = payload.get("actor_id", "anonymous")
@@ -121,28 +153,27 @@ def cs_agent(payload: dict) -> dict:
     context = fetch_customer_context(actor_id, user_message)
     prompt_with_context = SYSTEM_PROMPT.format(customer_context=context)
 
-    # Gateway MCP + Browser Tool (lazy init)
-    mcp_client = MCPClient(
-        lambda: streamablehttp_client(GATEWAY_URL)
-    )
-
-    from strands_tools.browser import AgentCoreBrowser
-    browser_tool = AgentCoreBrowser(region=REGION)
-
     agent = Agent(
         model=model,
         system_prompt=prompt_with_context,
-        tools=[mcp_client, browser_tool.browser],
+        tools=[mcp_client, get_browser_tool().browser],
     )
-    result = agent(user_message)
 
-    # Memory에 대화 저장
-    save_turn(actor_id, session_id, user_message, str(result))
+    full_text = ""
+    async for event in agent.stream_async(user_message):
+        chunk = event.get("data")
+        if chunk:
+            full_text += chunk
+            yield {"type": "chunk", "response": chunk, "session_id": session_id}
 
-    return {
-        "response": str(result),
-        "session_id": session_id,
-    }
+    # Memory 저장은 응답 완료 후 백그라운드로 — 사용자를 기다리게 하지 않음
+    threading.Thread(
+        target=save_turn,
+        args=(actor_id, session_id, user_message, full_text),
+        daemon=True,
+    ).start()
+
+    yield {"type": "done", "response": full_text, "session_id": session_id}
 
 
 if __name__ == "__main__":

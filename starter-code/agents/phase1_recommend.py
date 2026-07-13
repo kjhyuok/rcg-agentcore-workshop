@@ -17,6 +17,12 @@ GATEWAY_URL = os.environ.get("AGENTCORE_GATEWAY_URL", "")
 REGION = os.environ.get("AWS_REGION", "us-east-1")
 
 # ============================================================
+# MCPClient는 모듈 로드 시 1회만 생성 — 요청마다 새로 만들면
+# 매번 MCP 핸드셰이크 비용(수백ms)이 붙어 응답이 그만큼 늦어짐
+# ============================================================
+mcp_client = MCPClient(lambda: streamablehttp_client(GATEWAY_URL))
+
+# ============================================================
 # System Prompt
 # ============================================================
 SYSTEM_PROMPT = """당신은 리테일 상품 추천 전문가입니다.
@@ -41,6 +47,7 @@ SYSTEM_PROMPT = """당신은 리테일 상품 추천 전문가입니다.
 - 추천 상품은 번호 매기기 (1, 2, 3)
 - 각 상품에 추천 이유 1줄 추가
 - 마지막에 알러지로 제외한 상품 별도 표기
+- 이모지는 최소화 (상품당 0~1개), 장식용 헤딩(##)이나 표는 쓰지 않고 목록으로 간결하게
 
 ## 제약
 - 재고 0인 상품 추천 금지
@@ -62,28 +69,30 @@ app = BedrockAgentCoreApp()
 
 
 @app.entrypoint
-def recommend_agent(payload: dict) -> dict:
-    """AgentCore Runtime이 호출하는 진입점"""
+async def recommend_agent(payload: dict):
+    """AgentCore Runtime이 호출하는 진입점 (async generator = 토큰 스트리밍)
+
+    return 대신 yield를 쓰면 BedrockAgentCoreApp이 자동으로 SSE 스트리밍
+    응답으로 변환합니다. 참가자가 agentcore invoke로 호출하면 Agent가
+    답을 다 만들 때까지 기다리지 않고, 토큰이 생성되는 즉시 화면에 흘러나옵니다.
+    """
     user_message = payload.get("message", payload.get("prompt", ""))
     session_id = payload.get("session_id", f"sess-{uuid.uuid4()}")
 
-    # Gateway MCP Client로 Tool 연결
-    mcp_client = MCPClient(
-        lambda: streamablehttp_client(GATEWAY_URL)
-    )
-
-    # Gateway Tools를 Agent에 부여
     agent = Agent(
         model=model,
         system_prompt=SYSTEM_PROMPT,
         tools=[mcp_client],
     )
-    result = agent(user_message)
 
-    return {
-        "response": str(result),
-        "session_id": session_id,
-    }
+    full_text = ""
+    async for event in agent.stream_async(user_message):
+        chunk = event.get("data")
+        if chunk:
+            full_text += chunk
+            yield {"type": "chunk", "response": chunk, "session_id": session_id}
+
+    yield {"type": "done", "response": full_text, "session_id": session_id}
 
 
 # ============================================================

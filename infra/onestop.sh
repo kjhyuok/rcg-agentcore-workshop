@@ -164,6 +164,19 @@ for entry in "${LAMBDAS[@]}"; do
   rm -f /tmp/${FUNC_NAME}.zip
 done
 
+# Lambda warm-up — 콜드스타트를 미리 태워 Agent 첫 응답 지연을 줄임
+# (Tool 호출마다 Lambda invoke가 걸리는데, 배포 직후 첫 호출은 초기화 비용이 붙음)
+echo "  🔥 Lambda warm-up..."
+for entry in "${LAMBDAS[@]}"; do
+  FUNC_NAME="${PREFIX}-${entry##*:}"
+  aws lambda invoke \
+    --function-name "${FUNC_NAME}" \
+    --payload '{"body": "{}"}' \
+    --region "${REGION}" /tmp/warmup-out.json > /dev/null 2>&1 &
+done
+wait
+rm -f /tmp/warmup-out.json
+
 # ============================================================
 # 3. Mock 사이트 S3 배포
 # ============================================================
