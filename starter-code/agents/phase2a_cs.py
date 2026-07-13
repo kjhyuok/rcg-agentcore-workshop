@@ -7,6 +7,7 @@ import os
 import json
 import uuid
 import boto3
+from datetime import datetime, timezone
 from strands import Agent
 from strands.models import BedrockModel
 from strands.tools.mcp import MCPClient
@@ -65,7 +66,7 @@ def fetch_customer_context(actor_id: str, query: str) -> str:
     try:
         results = memory_client.retrieve_memory_records(
             memoryId=MEMORY_ID,
-            namespace=f"users/{actor_id}/facts",
+            namespace=f"/users/{actor_id}/facts/",
             searchCriteria={
                 "searchQuery": query,
                 "topK": 5,
@@ -73,9 +74,9 @@ def fetch_customer_context(actor_id: str, query: str) -> str:
         )
         records = results.get("memoryRecordSummaries", [])
         if records:
-            return "\n".join(r.get("content", "") for r in records)
-    except Exception:
-        pass
+            return "\n".join(r["content"]["text"] for r in records)
+    except Exception as e:
+        print(f"[Memory Retrieve Error] {e}")
     return "신규 고객 (이전 맥락 없음)"
 
 
@@ -88,13 +89,14 @@ def save_turn(actor_id: str, session_id: str, user_msg: str, agent_response: str
             memoryId=MEMORY_ID,
             actorId=actor_id,
             sessionId=session_id,
+            eventTimestamp=datetime.now(timezone.utc),
             payload=[
-                {"conversationalMessage": {"role": "user", "content": [{"text": user_msg}]}},
-                {"conversationalMessage": {"role": "assistant", "content": [{"text": agent_response}]}},
+                {"conversational": {"role": "USER", "content": {"text": user_msg}}},
+                {"conversational": {"role": "ASSISTANT", "content": {"text": agent_response}}},
             ],
         )
-    except Exception:
-        pass
+    except Exception as e:
+        print(f"[Memory Save Error] {e}")
 
 
 # ============================================================
