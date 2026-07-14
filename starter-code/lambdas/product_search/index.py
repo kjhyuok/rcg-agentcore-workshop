@@ -25,6 +25,10 @@ PRODUCTS = {
     "P017": {"product_id": "P017", "name": "컵누들 얼큰김치맛", "category": "간편식", "price": 2300, "rating": 4.0, "stock": 300, "tags": ["매콤", "간편", "가성비"]},
     "P018": {"product_id": "P018", "name": "블루투스 무선 이어폰", "category": "전자기기", "price": 45000, "rating": 4.5, "stock": 55, "tags": ["무선", "휴대", "저소음"]},
     "P019": {"product_id": "P019", "name": "저당 두유 190ml", "category": "음료", "price": 2000, "rating": 4.2, "stock": 220, "tags": ["무설탕", "식물성", "저칼로리"]},
+    "P020": {"product_id": "P020", "name": "저자극 카밍 토너", "category": "뷰티", "price": 18000, "rating": 4.6, "stock": 90, "tags": ["자연유래", "저자극", "수분"]},
+    "P021": {"product_id": "P021", "name": "올인원 카레 도시락", "category": "간편식", "price": 4800, "rating": 4.4, "stock": 160, "tags": ["올인원", "가성비", "한끼"]},
+    "P022": {"product_id": "P022", "name": "자연유래 크림 로션", "category": "뷰티", "price": 21000, "rating": 4.5, "stock": 110, "tags": ["자연유래", "보습", "저자극"]},
+    "P023": {"product_id": "P023", "name": "가성비 잡곡 죽 3팩", "category": "간편식", "price": 3600, "rating": 4.3, "stock": 190, "tags": ["가성비", "올인원", "죽"]},
 }
 
 
@@ -46,5 +50,5 @@ def handler(event, context):
 
     return {
         "statusCode": 200,
-        "body": json.dumps(results[:5], ensure_ascii=False),
+        "body": json.dumps(results[:10], ensure_ascii=False),
     }
