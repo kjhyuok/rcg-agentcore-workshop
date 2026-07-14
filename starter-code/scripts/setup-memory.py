@@ -66,9 +66,10 @@ if not memory_id:
             memoryStrategies=memoryStrategies,
         )
         print(f"  [DEBUG] response keys: {list(mem_resp.keys())}")
-        memory_id = mem_resp.get("memoryId") or mem_resp.get("memory", {}).get("memoryId")
+        memory_obj = mem_resp.get("memory", {})
+        memory_id = mem_resp.get("memoryId") or memory_obj.get("id") or memory_obj.get("memoryId")
         if not memory_id:
-            arn = mem_resp.get("memoryArn", "")
+            arn = mem_resp.get("memoryArn", "") or memory_obj.get("arn", "")
             if arn:
                 memory_id = arn.split("/")[-1]
         if not memory_id:
@@ -83,9 +84,10 @@ if not memory_id:
             eventExpiryDuration=30,
         )
         print(f"  [DEBUG] response keys: {list(mem_resp.keys())}")
-        memory_id = mem_resp.get("memoryId") or mem_resp.get("memory", {}).get("memoryId")
+        memory_obj = mem_resp.get("memory", {})
+        memory_id = mem_resp.get("memoryId") or memory_obj.get("id") or memory_obj.get("memoryId")
         if not memory_id:
-            arn = mem_resp.get("memoryArn", "")
+            arn = mem_resp.get("memoryArn", "") or memory_obj.get("arn", "")
             if arn:
                 memory_id = arn.split("/")[-1]
         print(f"✅ Memory 생성 완료: {memory_id}")

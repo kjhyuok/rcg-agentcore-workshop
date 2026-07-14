@@ -1,5 +1,6 @@
 """Phase 2A: CS 자동화 Agent — AgentCore Runtime + Memory"""
 import os
+from datetime import datetime, timezone
 import boto3
 from strands import Agent
 from strands.models.bedrock import BedrockModel
@@ -61,7 +62,7 @@ def fetch_customer_context(actor_id: str, query: str) -> str:
         )
         records = results.get("memoryRecordSummaries", [])
         if records:
-            return "\n".join(r.get("content", "") for r in records)
+            return "\n".join(r["content"]["text"] for r in records)
     except Exception:
         pass
     return "신규 고객 (이전 맥락 없음)"
@@ -75,9 +76,10 @@ def save_turn(actor_id: str, session_id: str, user_msg: str, agent_response: str
             memoryId=MEMORY_ID,
             actorId=actor_id,
             sessionId=session_id,
+            eventTimestamp=datetime.now(timezone.utc),
             payload=[
-                {"conversationalMessage": {"role": "user", "content": [{"text": user_msg}]}},
-                {"conversationalMessage": {"role": "assistant", "content": [{"text": agent_response}]}},
+                {"conversational": {"role": "USER", "content": {"text": user_msg}}},
+                {"conversational": {"role": "ASSISTANT", "content": {"text": agent_response}}},
             ],
         )
     except Exception:
