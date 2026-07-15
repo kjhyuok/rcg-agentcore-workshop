@@ -25,25 +25,32 @@ _browser_tool = None
 _browser_tool_lock = threading.Lock()
 
 
-def _fix_playwright_driver_permissions():
-    """CodeZip 배포로 실행권한(0755)을 잃은 playwright driver 바이너리를 복구.
-    Runtime의 /var/task에 풀린 playwright driver의 'node'가 실행권한이 없어
+def _prepare_playwright_driver():
+    """CodeZip 배포로 실행권한을 잃은 playwright driver의 node 바이너리를
+    쓰기 가능한 /tmp로 복사해 실행권한을 부여하고, PLAYWRIGHT_NODEJS_PATH로
+    그 위치를 쓰게 한다.
+
+    Runtime의 코드 영역(/var/task)은 읽기 전용이라 그 자리의
+    playwright/driver/node에 chmod를 걸 수 없어
     'PermissionError: [Errno 13] ... playwright/driver/node'가 발생한다.
-    playwright driver 디렉토리의 실행 파일들에 실행권한을 다시 부여한다."""
+    playwright는 compute_driver_executable()에서 node 경로를
+    os.getenv("PLAYWRIGHT_NODEJS_PATH", <기본경로>)로 결정하므로,
+    /tmp에 복사한 실행 가능 node를 이 환경변수로 지정한다. (cli.js는
+    /var/task에서 읽기만 하면 되므로 복사 불필요.) 프로세스당 최초 1회만 수행."""
     import os
     import stat
+    import shutil
+    import playwright
+
+    src_node = os.path.join(os.path.dirname(playwright.__file__), "driver", "node")
+    dst_node = "/tmp/pw-driver-node"
     try:
-        from playwright._impl._driver import compute_driver_executable
-        driver_paths = compute_driver_executable()  # (node_path, cli_js) 튜플
-    except Exception:
-        return
-    for p in driver_paths if isinstance(driver_paths, (list, tuple)) else [driver_paths]:
-        try:
-            if p and os.path.exists(p):
-                cur = os.stat(p).st_mode
-                os.chmod(p, cur | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
-        except Exception:
-            pass
+        if not os.path.exists(dst_node):
+            shutil.copy2(src_node, dst_node)
+        os.chmod(dst_node, os.stat(dst_node).st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
+        os.environ["PLAYWRIGHT_NODEJS_PATH"] = dst_node
+    except Exception as e:
+        print(f"[playwright driver prep error] {e}")
 
 
 def get_browser_tool():
@@ -51,7 +58,7 @@ def get_browser_tool():
     if _browser_tool is None:
         with _browser_tool_lock:
             if _browser_tool is None:
-                _fix_playwright_driver_permissions()
+                _prepare_playwright_driver()
                 from strands_tools.browser import AgentCoreBrowser
                 _browser_tool = AgentCoreBrowser(region=REGION)
     return _browser_tool
