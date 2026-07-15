@@ -25,11 +25,33 @@ _browser_tool = None
 _browser_tool_lock = threading.Lock()
 
 
+def _fix_playwright_driver_permissions():
+    """CodeZip 배포로 실행권한(0755)을 잃은 playwright driver 바이너리를 복구.
+    Runtime의 /var/task에 풀린 playwright driver의 'node'가 실행권한이 없어
+    'PermissionError: [Errno 13] ... playwright/driver/node'가 발생한다.
+    playwright driver 디렉토리의 실행 파일들에 실행권한을 다시 부여한다."""
+    import os
+    import stat
+    try:
+        from playwright._impl._driver import compute_driver_executable
+        driver_paths = compute_driver_executable()  # (node_path, cli_js) 튜플
+    except Exception:
+        return
+    for p in driver_paths if isinstance(driver_paths, (list, tuple)) else [driver_paths]:
+        try:
+            if p and os.path.exists(p):
+                cur = os.stat(p).st_mode
+                os.chmod(p, cur | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
+        except Exception:
+            pass
+
+
 def get_browser_tool():
     global _browser_tool
     if _browser_tool is None:
         with _browser_tool_lock:
             if _browser_tool is None:
+                _fix_playwright_driver_permissions()
                 from strands_tools.browser import AgentCoreBrowser
                 _browser_tool = AgentCoreBrowser(region=REGION)
     return _browser_tool
