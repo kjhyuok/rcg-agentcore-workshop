@@ -110,12 +110,20 @@ when {{
 ]
 
 # 기존 정책 전부 삭제 후 재등록 (멱등성 + 옛 정책 정리)
-# 초기 버전의 RefundUnder50k(process_return만 permit) 같은 잔재가 남아
-# default-deny로 다른 Tool을 막는 것을 방지한다.
+# 삭제가 반영될 때까지 대기 — 삭제 직후 곧바로 create하면 "이미 존재"로
+# 스킵되어 옛 정책(잘못된 resource 매칭)이 그대로 남는다.
 try:
-    for old in client.list_policies(policyEngineId=engine_id).get("policies", []):
+    old_policies = client.list_policies(policyEngineId=engine_id).get("policies", [])
+    for old in old_policies:
         client.delete_policy(policyEngineId=engine_id, policyId=old["policyId"])
         print(f"  🗑️  기존 정책 삭제: {old.get('name', old['policyId'])}")
+    # 삭제 반영 대기 (전부 사라질 때까지 최대 ~30초)
+    for _ in range(15):
+        remaining = client.list_policies(policyEngineId=engine_id).get("policies", [])
+        if not remaining:
+            break
+        time.sleep(2)
+    print(f"  ✅ 기존 정책 정리 완료 (남은 정책: {len(client.list_policies(policyEngineId=engine_id).get('policies', []))}개)")
 except Exception as e:
     print(f"  ℹ️  기존 정책 정리 스킵: {e}")
 
