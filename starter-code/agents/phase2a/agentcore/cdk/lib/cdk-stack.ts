@@ -113,6 +113,29 @@ export class AgentCoreStack extends Stack {
     }
     this.application = new AgentCoreApplication(this, 'Application', appProps as any);
 
+    // Grant every agent's runtime execution role permission to use the
+    // AgentCore Browser Tool. CDK-generated runtime roles only include base
+    // permissions (Bedrock/logs/ECR); without these, StartBrowserSession fails
+    // with AccessDeniedException. Phase 2A's CS Agent uses Browser for
+    // competitor price comparison.
+    for (const env of this.application.environments.values()) {
+      env.runtime.role.addToPrincipalPolicy(
+        new iam.PolicyStatement({
+          sid: 'AgentCoreBrowserAccess',
+          actions: [
+            'bedrock-agentcore:StartBrowserSession',
+            'bedrock-agentcore:GetBrowserSession',
+            'bedrock-agentcore:ListBrowserSessions',
+            'bedrock-agentcore:StopBrowserSession',
+            'bedrock-agentcore:ConnectBrowserAutomationStream',
+            'bedrock-agentcore:ConnectBrowserLiveViewStream',
+            'bedrock-agentcore:UpdateBrowserStream',
+          ],
+          resources: ['*'],
+        })
+      );
+    }
+
     // Create AgentCoreMcp if there are gateways configured
     if (mcpSpec?.agentCoreGateways && mcpSpec.agentCoreGateways.length > 0) {
       new AgentCoreMcp(this, 'Mcp', {
