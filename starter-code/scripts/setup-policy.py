@@ -54,7 +54,8 @@ print(f"🛡️  Policy Engine 생성: {ENGINE_NAME}")
 engine_id = None
 engine_arn = None
 try:
-    for e in client.list_policy_engines().get("items", []):
+    # list_policy_engines 응답 키는 "policyEngines" (items 아님)
+    for e in client.list_policy_engines().get("policyEngines", []):
         if e.get("name") == ENGINE_NAME:
             engine_id = e.get("policyEngineId")
             engine_arn = e.get("policyEngineArn")
