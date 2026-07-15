@@ -95,10 +95,12 @@ POLICIES = [
     {
         "name": "ForbidHighRefund",
         "desc": "process_return 환불 50,000원 초과 시 차단 (에스컬레이션 대상)",
+        # action을 특정(tool-specific)하면 resource도 특정 Gateway ARN으로 제약해야 함
+        # (API 요구: "constrain the resource to a specific AgentCore::Gateway resource")
         "cedar": f'''forbid(
   principal,
   action == AgentCore::Action::"{ACTION}",
-  resource is AgentCore::Gateway
+  resource == AgentCore::Gateway::"{GATEWAY_ARN}"
 )
 when {{
   context.input has refund_amount &&
