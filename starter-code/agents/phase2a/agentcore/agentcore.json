@@ -13,7 +13,7 @@
       "build": "CodeZip",
       "entrypoint": "main.py",
       "codeLocation": "app/phase2a/",
-      "runtimeVersion": "PYTHON_3_14",
+      "runtimeVersion": "PYTHON_3_12",
       "networkMode": "PUBLIC",
       "protocol": "HTTP"
     }
