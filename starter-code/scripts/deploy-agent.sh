@@ -33,12 +33,13 @@ cat > "${TARGETS_FILE}" << TARGETSEOF
 ]
 TARGETSEOF
 
-# Inject runtime env vars (AGENTCORE_GATEWAY_URL, AGENTCORE_MEMORY_ID, AWS_REGION)
+# Inject runtime env vars (AGENTCORE_GATEWAY_URL, AGENTCORE_MEMORY_ID, MOCK_SITE_URL, AWS_REGION)
 # into agentcore.json — the CDK migration dropped the old --env flag, so this is
 # the equivalent for the new agentcore.json/CDK-based deploy.
 AGENTCORE_JSON="${AGENT_DIR}/agentcore/agentcore.json"
 AGENTCORE_GATEWAY_URL="${AGENTCORE_GATEWAY_URL:-}" \
 AGENTCORE_MEMORY_ID="${AGENTCORE_MEMORY_ID:-}" \
+MOCK_SITE_URL="${MOCK_SITE_URL:-}" \
 AWS_REGION="${REGION}" \
 python3.12 - "${AGENTCORE_JSON}" << 'PYEOF'
 import json
@@ -52,6 +53,7 @@ with open(path) as f:
 env_map = {
     "AGENTCORE_GATEWAY_URL": os.environ.get("AGENTCORE_GATEWAY_URL", ""),
     "AGENTCORE_MEMORY_ID": os.environ.get("AGENTCORE_MEMORY_ID", ""),
+    "MOCK_SITE_URL": os.environ.get("MOCK_SITE_URL", ""),
     "AWS_REGION": os.environ.get("AWS_REGION", ""),
 }
 env_vars = [{"name": k, "value": v} for k, v in env_map.items() if v]
