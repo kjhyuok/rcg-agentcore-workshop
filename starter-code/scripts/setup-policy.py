@@ -84,12 +84,12 @@ POLICIES = [
     {
         "name": "AllowAllTools",
         "desc": "모든 Gateway Tool 호출 기본 허용 (조회/정책확인 등)",
-        # resource를 특정 ARN으로 == 매칭하면 실제 요청과 안 맞아 default-deny될 수 있음
-        # (Pitfall 5). unconstrained permit으로 전체 허용 후, forbid로만 예외 차단.
+        # resource를 특정 ARN으로 == 매칭하면 실제 요청과 안 맞아 default-deny되고,
+        # 완전 무제약(resource)은 API가 거부한다. → resource 타입으로 제약한다.
         "cedar": '''permit(
   principal,
   action,
-  resource
+  resource is AgentCore::Gateway
 );''',
     },
     {
@@ -98,7 +98,7 @@ POLICIES = [
         "cedar": f'''forbid(
   principal,
   action == AgentCore::Action::"{ACTION}",
-  resource
+  resource is AgentCore::Gateway
 )
 when {{
   context.input has refund_amount &&
