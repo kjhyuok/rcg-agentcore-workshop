@@ -16,6 +16,8 @@ dependencies = [
     "mcp >= 1.19.0",
     "strands-agents >= 1.15.0",
     "strands-agents-tools >= 0.1",
+    "nest-asyncio >= 1.6",
+    "playwright",
 ]
 
 [tool.hatch.build.targets.wheel]
