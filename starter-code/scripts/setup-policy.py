@@ -74,34 +74,63 @@ if not engine_id:
     print(f"✅ Policy Engine 생성: {engine_id}")
 
 # ============================================================
-# 2. Cedar 정책 등록 — "환불 50,000원 이하만 허용"
-#    (초과분은 default-deny로 자동 차단 → Agent가 에스컬레이션 안내)
+# 2. Cedar 정책 등록 (2개)
+#    Cedar는 default-deny + forbid-overrides-permit.
+#    - 정책 A: 모든 Tool 호출을 기본 허용 (조회성 Tool들이 막히지 않도록)
+#    - 정책 B: process_return은 환불 50,000원 초과 시 명시적 forbid
+#      → forbid가 permit을 이기므로, 고액 환불만 차단되고 나머지는 정상 동작
 # ============================================================
-CEDAR_STATEMENT = f'''permit(
+POLICIES = [
+    {
+        "name": "AllowAllTools",
+        "desc": "모든 Gateway Tool 호출 기본 허용 (조회/정책확인 등)",
+        "cedar": f'''permit(
+  principal,
+  action,
+  resource == AgentCore::Gateway::"{GATEWAY_ARN}"
+);''',
+    },
+    {
+        "name": "ForbidHighRefund",
+        "desc": "process_return 환불 50,000원 초과 시 차단 (에스컬레이션 대상)",
+        "cedar": f'''forbid(
   principal,
   action == AgentCore::Action::"{ACTION}",
   resource == AgentCore::Gateway::"{GATEWAY_ARN}"
 )
 when {{
   context.input has refund_amount &&
-  context.input.refund_amount <= 50000
-}};'''
+  context.input.refund_amount > 50000
+}};''',
+    },
+]
 
-print("📜 Cedar 정책 등록: 환불 50,000원 이하만 허용 (초과 시 차단)")
+# 기존 정책 전부 삭제 후 재등록 (멱등성 + 옛 정책 정리)
+# 초기 버전의 RefundUnder50k(process_return만 permit) 같은 잔재가 남아
+# default-deny로 다른 Tool을 막는 것을 방지한다.
 try:
-    client.create_policy(
-        name="RefundUnder50k",
-        policyEngineId=engine_id,
-        definition={"cedar": {"statement": CEDAR_STATEMENT}},
-        description="process_return은 환불 금액 50,000원 이하일 때만 허용",
-        validationMode="FAIL_ON_ANY_FINDINGS",
-    )
-    print("✅ 정책 등록 완료")
+    for old in client.list_policies(policyEngineId=engine_id).get("policies", []):
+        client.delete_policy(policyEngineId=engine_id, policyId=old["policyId"])
+        print(f"  🗑️  기존 정책 삭제: {old.get('name', old['policyId'])}")
 except Exception as e:
-    if "already" in str(e).lower() or "conflict" in str(e).lower():
-        print("ℹ️  정책 이미 존재")
-    else:
-        raise
+    print(f"  ℹ️  기존 정책 정리 스킵: {e}")
+
+print("📜 Cedar 정책 등록: 전체 허용 + 고액 환불(>5만원) 차단")
+for p in POLICIES:
+    try:
+        client.create_policy(
+            name=p["name"],
+            policyEngineId=engine_id,
+            definition={"cedar": {"statement": p["cedar"]}},
+            description=p["desc"],
+            validationMode="FAIL_ON_ANY_FINDINGS",
+        )
+        print(f"  ✅ {p['name']}")
+    except Exception as e:
+        if "already" in str(e).lower() or "conflict" in str(e).lower():
+            print(f"  ℹ️  {p['name']} 이미 존재")
+        else:
+            raise
 
 # ============================================================
 # 3. Gateway에 Policy Engine 연결 (LOG_ONLY로 시작)
