@@ -136,6 +136,28 @@ export class AgentCoreStack extends Stack {
       );
     }
 
+    // Grant every agent's runtime execution role permission to use AgentCore
+    // Memory. Like Browser above, CDK-generated runtime roles only include base
+    // permissions; without these, RetrieveMemoryRecords / CreateEvent fail with
+    // AccessDeniedException. Phase 2A's CS Agent reads (retrieve_memory_records)
+    // and writes (create_event) customer context across sessions.
+    for (const env of this.application.environments.values()) {
+      env.runtime.role.addToPrincipalPolicy(
+        new iam.PolicyStatement({
+          sid: 'AgentCoreMemoryAccess',
+          actions: [
+            'bedrock-agentcore:RetrieveMemoryRecords',
+            'bedrock-agentcore:CreateEvent',
+            'bedrock-agentcore:ListMemoryRecords',
+            'bedrock-agentcore:GetMemoryRecord',
+            'bedrock-agentcore:ListEvents',
+            'bedrock-agentcore:GetEvent',
+          ],
+          resources: ['*'],
+        })
+      );
+    }
+
     // Create AgentCoreMcp if there are gateways configured
     if (mcpSpec?.agentCoreGateways && mcpSpec.agentCoreGateways.length > 0) {
       new AgentCoreMcp(this, 'Mcp', {
